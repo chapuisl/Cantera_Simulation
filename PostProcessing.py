@@ -178,7 +178,7 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                 )
             for indexPhi, eq_ratio in enumerate(Equivalent_Ratio):
                 P_eq_path = create_folder(path_P, f"{indexPhi:02}-Equivalent_ratio_Phi-{eq_ratio:.2f}")
-                P_eq_path_spe = create_folder(path_P_spe, f"{indexP:02}-Initial_Pressure_{P:.2f}bars")
+                P_eq_path_spe = create_folder(path_P_spe, f"{indexPhi:02}-Equivalent_ratio_Phi-{eq_ratio:.2f}")
                 print(f"\t  -> PROCESSING: Pressure {P:.2f} bar / Temeperature {T:.2f} K/  Equivalent Ratio {eq_ratio:.2f}")
                 
                 Grid_list          = []
@@ -551,7 +551,9 @@ def PostProcess_Temperature_Adiabatic(mechanisms, MECH, Fuel_name, Oxi_name, con
             Density_list               = []
             
             PhimaxPhi                  = []
+            TemMax                  = []
             orientationPhi             = []
+            orientationT               = []
             
             for mech_name in mechanisms:
                 mech_index=list(mechanisms.keys()).index(mech_name)
@@ -575,7 +577,10 @@ def PostProcess_Temperature_Adiabatic(mechanisms, MECH, Fuel_name, Oxi_name, con
                     Density_list.append(Rho)
                     
                     PhimaxPhi.append(Equivalent_Ratio[Temp.index(np.max(Temp))])
+                    TemMax.append(np.max(Temp))
                     orientationPhi.append('V')
+                    orientationT.append('H')
+                    
                 
                 
             if Final_Temperature is True:
@@ -584,7 +589,7 @@ def PostProcess_Temperature_Adiabatic(mechanisms, MECH, Fuel_name, Oxi_name, con
                                        colors=COLOR,
                                        ylabel= " Temperature [K]",
                                        xlabel= r"Equivalent ratio [phi]",
-                                       line_value=PhimaxPhi, line_orientation=orientationPhi, 
+                                       line_value=PhimaxPhi+TemMax, line_orientation=orientationPhi+orientationT, 
                                        plot_fig = False ,
                                        save_fig = Save_plot, 
                                        save_path = file_path_Adiabatic_Temperature_P,
@@ -1240,6 +1245,7 @@ def PostProcess_Counter_flow(mechanisms, MECH, Fuel_name, Oxi_name, configuratio
                         name_fig=base_name.format(suffix),
                     )
                 mech_index +=1
+
 def PostProcess_Counter_flow_quenching(mechanisms, MECH, Fuel_name, Oxi_name, configuration, file_path_csv,file_path_plot, Save_plot):
     COLOR = GC.Black_Purple()
     GC.config_plot()

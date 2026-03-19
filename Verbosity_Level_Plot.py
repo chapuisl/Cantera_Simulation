@@ -429,26 +429,29 @@ def Verbosity_Counter_flow_quenching(level_verbosity, flame, n, strain_factor,Co
     # -------------------------------
         # Verbosity LEVEL 0
         # -------------------------------
-        if level_verbosity == 1 and n % 10 == 0:
+        strain_maxi = np.max(np.abs(np.gradient(flame.velocity) / np.gradient(flame.grid)))
+        if level_verbosity == 1 and n % 30 == 0:
             print("\t \t --------------------------------------------------")
             print(f"\t \t Verbosity LEVEL: {level_verbosity}")
             print("\t \t --------------------------------------------------")
             print("\t \t --------------------------------------------------")
-            print(f"\t \t Iteration              : {n}")
-            print(f"\t \t Strain factor          : {strain_factor:.6f}")
+            print(f"\t \t Strain Iteration       : {n}")
+            print(f"\t \t Strain maxi            : { strain_maxi:.4f}")
             print(f"\t \t Current Tmax           : {np.max(flame.T):.6f} K")
+            print(f"\t \t Strain factor          : {strain_factor:.6f}")
             print("\t \t --------------------------------------------------")
 
         # -------------------------------
         # Verbosity LEVEL 1
         # -------------------------------
-        elif level_verbosity == 2 and n % 5 == 0:
+        elif level_verbosity == 2 and n % 10 == 0:
             exp_d_a, exp_u_a, exp_V_a, exp_lam_a, exp_mdot_a = Coef_Scaling_flame
             print("\t \t --------------------------------------------------")
             print(f"\t \t Verbosity LEVEL: {level_verbosity}")
             print("\t \t --------------------------------------------------")
             print("\t \t --------------------------------------------------")
-            print(f"\t \t Iteration                  : {n}")
+            print(f"\t \t Strain Iteration           : {n}")
+            print(f"\t \t Strain maxi                : { strain_maxi:.4f}")
             print(f"\t \t Strain factor              : {strain_factor:.6f}")
             print(f"\t \t Current Tmax               : {np.max(flame.T):.6f} K")
             print(f"\t \t Alpha(n)                   : {alpha[-1]:.6f}")
@@ -468,7 +471,8 @@ def Verbosity_Counter_flow_quenching(level_verbosity, flame, n, strain_factor,Co
             print(f"\t \t Verbosity LEVEL: {level_verbosity}")
             print("\t \t --------------------------------------------------")
             print("\t \t --------------------------------------------------")
-            print(f"\t \t Iteration                  : {n}")
+            print(f"\t \t Strain Iteration           : {n}")
+            print(f"\t \t Strain maxi                : { strain_maxi:.4f}") 
             print(f"\t \t Strain factor              : {strain_factor:.6f}")
             print(f"\t \t Current Tmax               : {np.max(flame.T):.6f} K")
             print(f"\t \t Alpha(n)                   : {alpha[-1]:.6f}")

@@ -195,8 +195,9 @@
 
 output:
   directory: /Users/lilian_chapuis/Documents/04-PostProcessing_Result/00-Cantera_Simulation
-  filename: AMONIA_AIR_Simulation1
-
+  filename: 50-NH3_50-H2_AIR_Simulation1/
+  # filename: TEst
+  
 # ----------------------------------------------------------
 # Type of simulations
 # ----------------------------------------------------------
@@ -228,7 +229,9 @@ kinetics:
 mixture:
   fuel:
     - species   : NH3
-      fraction  : 1.0
+      fraction  : 0.5
+    - species   : H2
+      fraction  : 0.5
 
   oxidizer:
     - species   : O2
@@ -338,7 +341,7 @@ conditions:
       mode   : linspace
       start  : 800
       end    : 2500
-      points : 15
+      points : 20
 
     Pressure:
       mode   : list
@@ -404,7 +407,7 @@ conditions:
 
 post_processing:
   save_plots      : true
-  verbosity_level : 2
+  verbosity_level : 1
 
 
 

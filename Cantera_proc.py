@@ -69,21 +69,36 @@ import Graphic_Configuration as GC
 # ===================================================================================================================
 """
 from colorama import Fore,Style
+from datetime import datetime
 from colorama import init
 init(autoreset=True)
-import cantera as ct
-import numpy as np
 import os, psutil
-import shutil
 import time
 import sys
 
 import cProfile
 import pstats
 
-process = psutil.Process(os.getpid())
-print("Mémoire utilisée :", process.memory_info().rss / 1e6, "MB")
+"""
+# ===================================================================================================================
+#  Class
+# ===================================================================================================================
+"""
+class Tee:
+    def __init__(self, folder, filename):
+        os.makedirs(folder, exist_ok=True)
+        filepath = os.path.join(folder, filename)
 
+        self.file = open(filepath, "w", encoding="utf-8")
+        self.stdout = sys.stdout
+
+    def write(self, message):
+        self.file.write(message)
+        self.stdout.write(message)
+
+    def flush(self):
+        self.file.flush()
+        self.stdout.flush()
 """
 # ===================================================================================================================
 #  Function
@@ -103,15 +118,25 @@ def main_process(parameter_coupling):
     # PARAMETERS  INITIALISATION
     # ===================================================
     print(Fore.GREEN +"  > START INITIALISATION ")
-
     print(f"\t \t > Start Reading file '{parameter_coupling}' for Initialisation ")
+
+    process = psutil.Process(os.getpid())
+    print("\t \t > Mémoire utilisée :", process.memory_info().rss / 1e6, "MB")
+
     
     ## Reading of the parameter coupling file
     configuration  = module_check(parameter_coupling)
     
     ## Initialisation of all the file needed
-    file_name = configuration["path_file"]["directory"]+ '/' + configuration["path_file"]["filename"]
+    file = configuration["path_file"]["filename"]
+    file_name = configuration["path_file"]["directory"]+ '/' + file
+
+    
     subfolders = Commom_Tool.backup_file(parameter_coupling,file_name )
+
+    ## Print log in the file simulation.log
+    timestamp = datetime.now().strftime("%d-%m-%Y_%Hh%M")
+    sys.stdout = Tee(file_name, f"simulation_{timestamp}.log")
     
     ## Extraction of each parameter features and values
     mechanisms       = configuration["mechanisms"]
@@ -154,7 +179,10 @@ def main_process(parameter_coupling):
         print(Fore.YELLOW + 80*"_")
         print(Fore.YELLOW + 80*"-")
         print(f"""
-        
+         MIXTURE INFORMATION:
+              Fuel composition             :  {Fuel}
+              Oxidizer composition         :  {Oxidizer}
+         -----------------------------------------------------------
          Mechanisms                        :  {MECH}
          Number of Pressure Point          :  {len(Bash_Pressure_Flame1D)} 
          Number of Temeprature Point       :  {len(Bash_Temp_Flame1D)} 
@@ -178,7 +206,7 @@ def main_process(parameter_coupling):
 
         print(Fore.YELLOW + 80*"_")
         print(Fore.YELLOW + 80*"-")
-        time.sleep(2.0)   
+        time.sleep(2.5)   
         
         file_path_flame_csv = create_folder(file_name +"/" + subfolders[3], "00-Flame_1D")
         file_path_flame = create_folder(file_name + "/" + subfolders[0], "00-Flame_1D")
@@ -252,7 +280,10 @@ def main_process(parameter_coupling):
         print(Fore.YELLOW + 80*"_")
         print(Fore.YELLOW + 80*"-")
         print(f"""
-              
+        MIXTURE INFORMATION:
+              Fuel composition             :  {Fuel}
+              Oxidizer composition         :  {Oxidizer}
+        -----------------------------------------------------------
         Mechanisms                        :  {MECH}
         Number of Pressure Point          :  {len(Bash_Pressure_IDT)} 
         Number of Temeprature Point       :  {len(Bash_Temp_IDT)} 
@@ -269,7 +300,8 @@ def main_process(parameter_coupling):
         """)
         print(Fore.YELLOW + 80*"_")
         print(Fore.YELLOW + 80*"-")
-        time.sleep(2) 
+        time.sleep(2.5) 
+
         file_path_IDT = create_folder(file_name +"/" + subfolders[0], "01-Ignition_Delay_Time") 
         file_path_IDT_csv = create_folder(file_name +"/" + subfolders[3], "01-Ignition_Delay_Time") 
         
@@ -333,7 +365,10 @@ def main_process(parameter_coupling):
         print(Fore.YELLOW + 80*"_")
         print(Fore.YELLOW + 80*"-")
         print(f"""
-
+         MIXTURE INFORMATION:
+                Fuel composition             :  {Fuel}
+                Oxidizer composition         :  {Oxidizer}
+         -----------------------------------------------------------
          Mechanisms                        :  {MECH}
          Number of Pressure Point          :  {len(Bash_Pressure_Adiabatic)} 
          Number of Temeprature Point       :  {len(Bash_Temp_Adiabatic)} 
@@ -412,7 +447,10 @@ def main_process(parameter_coupling):
         print(Fore.YELLOW + 80*"_")
         print(Fore.YELLOW + 80*"-")
         print(f"""
-
+         MIXTURE INFORMATION:
+              Fuel composition             :  {Fuel}
+              Oxidizer composition         :  {Oxidizer}
+         -----------------------------------------------------------
          Mechanisms                        :  {MECH}
          Number of Pressure Point          :  {len(Bash_Pressure_Composition)} 
          Number of Temeprature Point       :  {len(Bash_Temp_Composition)} 
@@ -429,7 +467,7 @@ def main_process(parameter_coupling):
         print(Fore.YELLOW + 80*"_")
         print(Fore.YELLOW + 80*"-")
         
-        time.sleep(2)           
+        time.sleep(2.5)           
         file_path_Composition_csv = create_folder(file_name+"/"+subfolders[3],"03-Gas_Composition")
         file_path_Compostion_plot = create_folder(file_name+"/"+subfolders[0],"03-Gas_Composition")
         
@@ -486,7 +524,10 @@ def main_process(parameter_coupling):
         print(Fore.YELLOW + 80*"_")
         print(Fore.YELLOW + 80*"-")
         print(f"""
-        
+         MIXTURE INFORMATION:
+              Fuel composition             :  {Fuel}
+              Oxidizer composition         :  {Oxidizer}
+         -----------------------------------------------------------
          Mechanisms                        :  {MECH}
          Number of Pressure Point          :  {len(Bash_Pressure_CF)} 
          Number of Temperature pairs       :  {len(Bash_Temp_CF)} 
@@ -504,7 +545,7 @@ def main_process(parameter_coupling):
         """)       
         print(Fore.YELLOW + 80*"_")
         print(Fore.YELLOW + 80*"-")
-        time.sleep(2)     
+        time.sleep(2.5)     
         
         file_path_CF_csv          = create_folder(file_name+"/"+subfolders[3],"04-Diffusion_Flame")
         file_path_CF_plot         = create_folder(file_name+"/"+subfolders[0],"04-Diffusion_Flame")
@@ -597,7 +638,8 @@ def main_process(parameter_coupling):
                                      file_path_QCF_csv,
                                      file_path_QCF_plot,
                                      Save_plot)
-                
+
+    return file           
                 
 #Execution function 
 #
@@ -616,7 +658,7 @@ def __main__():
     print()
     time.sleep(1.5) 
     START_time = time.time()
-    main_process("parameter_coupling.yaml")
+    file_name = main_process("parameter_coupling.yaml")
     print()
     END_time = time.time()
     elapsed = END_time - START_time
@@ -636,7 +678,7 @@ def __main__():
     subtitle = "Numerical processing finished successfully"
     time_line = f"Elapsed time: {elapsed:.3f} s"
     
-    print("#" + title.center(width) + "#")
+    print("#" + (file_name +' ' +title).center(width) + "#")
     print("#" + subtitle.center(width) + "#")
     print("#" + time_line.center(width) + "#")
     

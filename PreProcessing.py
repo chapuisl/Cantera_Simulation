@@ -720,7 +720,7 @@ def PreProcess_Counter_flow_quenching(mechanisms, MECH, Fuel_name, Oxi_name, Fue
                 rhoO = gas_temp2.density    # oxidizer inlet density
 
                 #Momentum conservation
-                Velocity_o = 1.0  # m/s
+                Velocity_o = 0.05  # m/s
                 rho_frac = rhoO / rhoF
                 Velocity_f = np.sqrt(rho_frac * Velocity_o ** 2)
                 
@@ -748,9 +748,16 @@ def PreProcess_Counter_flow_quenching(mechanisms, MECH, Fuel_name, Oxi_name, Fue
                 flame.radiation_enabled = False
  
                 flame.set_refine_criteria(ratio=5, slope=0.1, curve=0.2, prune=0.03)
- 
+
+                print('\t --> START Creating the initial solution')
+                print(f'\t \t Oxidizer Velocity {Velocity_o}  |   Fuel Velocity: {Velocity_f}')
                 flame.solve(loglevel, refine_grid=True, auto=True)
+                print('\t Temperature flame:', np.max(flame.T))
+                print('\t --> END Creating the initial solution')
+                print('\n')
                 
+
+
                 # Define a limit for the maximum temperature below which the flame is
                 # considered as extinguished and the computation is aborted
                 # This increases the speed of refinement, if enabled
@@ -765,8 +772,7 @@ def PreProcess_Counter_flow_quenching(mechanisms, MECH, Fuel_name, Oxi_name, Fue
 
                 flame.set_interrupt(interrupt_extinction)
                 
-                print('\t -- Creating the initial solution')
-                flame.solve(loglevel=0, auto=True)
+                # flame.solve(loglevel=0, auto=True)
                 
                 n = 0
                 n_last_burning = 0
@@ -793,9 +799,6 @@ def PreProcess_Counter_flow_quenching(mechanisms, MECH, Fuel_name, Oxi_name, Fue
                     flame.fuel_inlet.mdot *= strain_factor ** exp_mdot_a
                     flame.oxidizer_inlet.mdot *= strain_factor ** exp_mdot_a
                     
-                    #print information
-                    Verbosity_Counter_flow_quenching(Verbosity_level, flame, n, strain_factor,Coef_Scaling_flame,alpha,flame.fuel_inlet.mdot,flame.oxidizer_inlet.mdot)
-                    
                     # Update velocities
                     flame.flame.set_values("velocity", flame.flame.velocity * strain_factor ** exp_u_a)
                     flame.flame.set_values("spreadRate", flame.flame.spread_rate * strain_factor ** exp_V_a)
@@ -806,8 +809,12 @@ def PreProcess_Counter_flow_quenching(mechanisms, MECH, Fuel_name, Oxi_name, Fue
                         # Try solving the flame
                         flame.solve(loglevel=0)
                         
+                        #print information
+                        Verbosity_Counter_flow_quenching(Verbosity_level, flame, n, strain_factor,Coef_Scaling_flame,alpha,flame.fuel_inlet.mdot,flame.oxidizer_inlet.mdot)
+                    
                         # Save information
-                        a_maxi.append(np.max(np.abs(np.gradient(flame.velocity) / np.gradient(flame.grid))))
+                        strain_maxi = np.max(np.abs(np.gradient(flame.velocity) / np.gradient(flame.grid)))
+                        a_maxi.append(strain_maxi)
                         T_max.append(np.max(flame.T))
                         HRR_max.append(np.max(flame.heat_release_rate))
                         Fuel_mdot.append(flame.fuel_inlet.mdot)
@@ -815,8 +822,6 @@ def PreProcess_Counter_flow_quenching(mechanisms, MECH, Fuel_name, Oxi_name, Fue
                         InletFuel_Velocity.append(flame.velocity[0])
                         InletOxid_Velocity.append(flame.velocity[-1])
                         Max_dTdx.append(np.max(np.gradient(flame.T, flame.grid)))
-                        
-                        
                         
                     except FlameExtinguished:
                         print('\t -- Flame extinguished')

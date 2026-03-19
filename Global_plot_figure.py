@@ -98,6 +98,7 @@ import Graphic_Configuration as GC
 # ===================================================================================================================
 """
 from matplotlib.ticker import MaxNLocator,FormatStrFormatter
+from matplotlib.ticker import LogLocator, LogFormatterSciNotation, NullFormatter
 from matplotlib.legend_handler import HandlerTuple
 import matplotlib.pyplot as plt
 import os
@@ -116,52 +117,33 @@ def plot_evolution(t, data, labels=None, colors=None, styles=None , xlabel=None,
                    secondary_color=None, secondary_ylabel=None, subplot_titles=None,
                    plot_fig = False ,save_fig = False, save_path = None,name_fig = None):
     
-    if subplot_titles is not None and isinstance(data, (list, tuple)):
-         n_subplots = len(data)
-         fig, axes = plt.subplots(n_subplots, 1, figsize=plt.rcParams["figure.figsize"])
-         if n_subplots == 1:
-             axes = [axes]  # pour uniformiser
-         fig.suptitle(title, fontsize=14, fontweight='bold')
-    
-         for i, ax in enumerate(axes):
-             ax.plot(t, data[i], color=(colors[i] if colors else None))
-             
-             ax.xaxis.set_major_locator(MaxNLocator(5))
-             ax.yaxis.set_major_locator(MaxNLocator(6))
-             ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-             ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-             ax.grid(True, which="major")
-    
-             ax.set_ylabel(subplot_titles[i])
-             if i == n_subplots - 1:
-                 ax.set_xlabel(xlabel)
-                 ax.set_xlim(x_limit_left, x_limit_right)
-    
-         plt.tight_layout(rect=[0, 0, 1, 0.95])
-    
-         if save_fig and save_path is not None:
-             save_dir = os.path.join(save_path)
-             os.makedirs(save_dir, exist_ok=True)
-             safe_title = title.replace(" ", "_").replace("/", "_").replace("\\", "_")
-             plt.savefig(os.path.join(save_dir, f"{safe_title}.png"), dpi=300)
-             plt.close()   
-    
-         if plot_fig:
-             plt.show()
-         return
 
     # --- Cas simple : un seul graphique ---
     fig, ax1 = plt.subplots(figsize=figsize)
     
-    ax1.xaxis.set_major_locator(MaxNLocator(5))
-    ax1.yaxis.set_major_locator(MaxNLocator(6))
-    ax1.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-    ax1.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+    # --- Axe X ---
+    if type_x_scale == 'log':
+        ax1.xaxis.set_major_locator(LogLocator(base=10, numticks=6))
+        ax1.xaxis.set_major_formatter(LogFormatterSciNotation(base=10))
+        # Supprime les minor ticks labels qui encombrent
+        ax1.xaxis.set_minor_formatter(NullFormatter())
+    else:
+        ax1.xaxis.set_major_locator(MaxNLocator(5))
+        ax1.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+
+    # --- Axe Y ---
+    if type_y_scale == 'log':
+        ax1.yaxis.set_major_locator(LogLocator(base=10, numticks=6))
+        ax1.yaxis.set_major_formatter(LogFormatterSciNotation(base=10))
+        ax1.yaxis.set_minor_formatter(NullFormatter())
+    else:
+        ax1.yaxis.set_major_locator(MaxNLocator(6))
+        ax1.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+
+    fig.autofmt_xdate(rotation=45, ha='center')
     ax1.grid(True, which="both")
     ax1.set_yscale(type_y_scale)
     ax1.set_xscale(type_x_scale)
-    
-
     
     if isinstance(data, (list, tuple)) and len(data) > 0 and isinstance(data[0], (list, tuple)):
         data_list = data
