@@ -195,8 +195,8 @@
 
 output:
   directory: /Users/lilian_chapuis/Documents/04-PostProcessing_Result/00-Cantera_Simulation
-  filename: 50-NH3_50-H2_AIR_Simulation1/
-  # filename: TEst
+  # filename: 90-NH3_10-H2_AIR_Simulation1/
+  filename: TEst
   
 # ----------------------------------------------------------
 # Type of simulations
@@ -205,10 +205,10 @@ output:
 simulation:
   type:
     Flame_1D              : true
-    Temperature_Adiabatic : true
-    Ignition_Delay_time   : true
-    Gas_Composition       : true
-    Counter_flow          : true
+    Temperature_Adiabatic : false
+    Ignition_Delay_time   : false
+    Gas_Composition       : false
+    Counter_flow          : false
     
 
 
@@ -217,9 +217,8 @@ simulation:
 # ----------------------------------------------------------
 
 kinetics:
-  mechanism-1  : ZHU24  
-  mechanism-2  : STAGNI25  
-  mechanism-3  : STAGNI20  
+  mechanism-1  : SANDIEGO  
+  mechanism-2  : h2o2  
 
 
 # ----------------------------------------------------------
@@ -228,10 +227,9 @@ kinetics:
 
 mixture:
   fuel:
-    - species   : NH3
-      fraction  : 0.5
     - species   : H2
-      fraction  : 0.5
+      fraction  : 1.0
+    
 
   oxidizer:
     - species   : O2
@@ -322,17 +320,17 @@ conditions:
   Flame_1D:
     Temperature:
       mode   : list
-      values : [300,500]
+      values : [300]
 
     Pressure:
       mode   : list
-      values  : [1.01325,2]
+      values  : [1.01325]
 
     Phi:
       mode   : linspace
       start  : 0.7
       end    : 1.3
-      points : 10
+      points : 5
 
   #------------------------
 
@@ -345,7 +343,7 @@ conditions:
 
     Pressure:
       mode   : list
-      values : [1.01325,2]
+      values : [1.01325]
 
     Phi:
       mode   : linspace
@@ -358,28 +356,28 @@ conditions:
   Temperature_Adiabatic:
     Temperature:
       mode   : list
-      values : [300, 500]
+      values : [300]
 
     Pressure:
       mode   : list
-      values : [1.01325,2]
+      values : [1.01325]
 
     Phi:
       mode   : linspace
       start  : 0.7
       end    : 1.3
-      points : 15
+      points : 35
 
   #------------------------
 
   Gas_Composition:
     Temperature:
       mode   : list
-      values : [300, 500]
+      values : [300]
 
     Pressure:
       mode   : list
-      values : [1.01325,2]
+      values : [1.01325]
 
     Phi:
       mode   : linspace

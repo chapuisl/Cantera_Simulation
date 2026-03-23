@@ -19,7 +19,8 @@
 #       line styles, tick and grid formatting, and legend properties.
 #    2. `Color Configuration` : Different utility function that return a custum of 10 color gradient palette ranging 
 #       from oen color to a other
-#    3. 'test function': This function is use to show the plot for each different color function 
+#    3. `Line Configuration` : Different utility function that return a custum of 10 line gradient palette ranging 
+#    4. 'test function': This function is use to show the plot for each different color function 
 #    
 #
 #  These utilities are intended to create consistent, publication-quality figures with minimal repetitive
@@ -94,7 +95,12 @@ def config_plot(style="default", figsize=(12, 8), title_size=40, label_size=40, 
         "savefig.bbox": "tight"
     })
     
-# Color configuration
+####################################################################################################################################
+#                                                                                                                                  #                                                                                                                                                                          
+#                                                       Color Configurqtion                                                        #
+#                                                                                                                                  #           
+####################################################################################################################################
+
 
 def Black_Gray():
     # Dégradé de 10 couleurs : noir → gris → violet
@@ -229,7 +235,7 @@ def Ramdom():
             (0.0, 0.2, 0.9), 
             (0.7, 0.0, 0.65),
                # Rouge foncé
-                  ]      
+                  ] 
 def Purple_Black():
     return list(reversed(Black_Purple()))
 
@@ -245,6 +251,46 @@ def Red_Black():
 def Red_Blue():
     return list(reversed(Blue_Red()))
 
+
+    
+####################################################################################################################################
+#                                                                                                                                  #                                                                                                                                                                          
+#                                                       Line  Configurqtion                                                        #
+#                                                                                                                                  #           
+####################################################################################################################################
+def LineStyles():
+    # Palette de 10 styles de lignes différents
+    return [
+        '-',                # Ligne pleine
+        '-.',               # Tirets-point
+        ':',                # Pointillés
+        (0, (1, 1)),        # Très petits points
+        (0, (5, 1)),        # Tirets longs serrés
+        (0, (3, 5, 1, 5)),  # Tiret-point espacé
+        (0, (5, 10)),       # Tirets très espacés
+        (0, (1, 10)),       # Points très espacés
+        (0, (3, 1, 1, 1)),  # Tiret + petits points
+    ]
+
+
+
+
+####################################################################################################################################
+#                                                                                                                                  #                                                                                                                                                                          
+#                                                       Test  Configurqtion                                                        #
+#                                                                                                                                  #           
+####################################################################################################################################
+
+def plot_line(styles):
+    x = [xi for xi in range(15)]
+    colors = Black_Orange()
+    for i, style in enumerate(styles):
+        
+        y = [yi+i for yi in range(15)]
+        
+        plt.plot(x, y, linestyle=style,color=colors[i])
+    plt.show()
+
 def plot_colors(colors):
     fig, ax = plt.subplots()
     for i, color in enumerate(colors):
@@ -259,6 +305,6 @@ def plot_colors(colors):
     plt.show()
     
 
-    
+# plot_line(LineStyles())
 # plot_colors(Ramdom()) 
 

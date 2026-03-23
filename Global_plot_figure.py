@@ -102,7 +102,6 @@ from matplotlib.ticker import LogLocator, LogFormatterSciNotation, NullFormatter
 from matplotlib.legend_handler import HandlerTuple
 import matplotlib.pyplot as plt
 import os
-
 """
 # ===================================================================================================================
 #  Function
@@ -111,13 +110,15 @@ import os
 
             
 def plot_evolution(t, data, labels=None, colors=None, styles=None , xlabel=None,  ylabel=None,figsize = None,
-                   title="", legend_loc="best", grid=True, marker = None,x_limit_left= None, x_limit_right= None,type_x_scale='linear',type_y_scale='linear',
+                   title="", legend_loc="best", grid=True, marker = None,
+                   x_limit_left= 0.0, x_limit_right= None,y_limit_bot= 0.0, y_limit_top= None,
+                   type_x_scale='linear',type_y_scale='linear',
                    line_value=None, line_orientation='H',
                    secondary_data=None, secondary_label=None,
                    secondary_color=None, secondary_ylabel=None, subplot_titles=None,
                    plot_fig = False ,save_fig = False, save_path = None,name_fig = None):
     
-
+    
     # --- Cas simple : un seul graphique ---
     fig, ax1 = plt.subplots(figsize=figsize)
     
@@ -140,10 +141,11 @@ def plot_evolution(t, data, labels=None, colors=None, styles=None , xlabel=None,
         ax1.yaxis.set_major_locator(MaxNLocator(6))
         ax1.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
-    fig.autofmt_xdate(rotation=45, ha='center')
+   
     ax1.grid(True, which="both")
     ax1.set_yscale(type_y_scale)
     ax1.set_xscale(type_x_scale)
+    
     
     if isinstance(data, (list, tuple)) and len(data) > 0 and isinstance(data[0], (list, tuple)):
         data_list = data
@@ -151,7 +153,6 @@ def plot_evolution(t, data, labels=None, colors=None, styles=None , xlabel=None,
         data_list = [data]
     
     n_curves = len(data_list)
-    
     if isinstance(t, (list, tuple)) and len(t) > 0 and isinstance(t[0], (list, tuple)):
         t_list = t
     else:
@@ -175,14 +176,18 @@ def plot_evolution(t, data, labels=None, colors=None, styles=None , xlabel=None,
     
         y_min, y_max = ax1.get_ylim()
         x_min, x_max = ax1.get_xlim()
-    
+
+        y_max = max(y_max, y_limit_top) 
+        x_max = max(x_max, x_limit_right)
+        y_min = max(y_min, y_limit_bot)
+        x_min = max(x_min, x_limit_left)
+            
         y_range = y_max - y_min
         x_range = x_max - x_min
     
         for i in range(len(line_value)):
     
             if line_orientation[i] == 'H':
-    
                 ax1.axhline(y=line_value[i], color='red', linestyle='--', linewidth=2)
     
                 # Décalage vertical progressif
@@ -199,17 +204,13 @@ def plot_evolution(t, data, labels=None, colors=None, styles=None , xlabel=None,
     
                 offset_h += 1
     
-    
             elif line_orientation[i] == 'V':
-    
                 ax1.axvline(x=line_value[i], color='b', linestyle='--', linewidth=2)
     
                 # Décalage horizontal progressif
                 if type_x_scale == 'log':
                     x_text = x_max / (10 ** (0.1 * offset_v))
                     y_text = y_max + 0.2 * y_range
-                    
-                
                 else:
                     x_text = line_value[i] + offset_v * 0.1 * x_range
                     y_text = y_max + 0.2 * y_range
@@ -222,12 +223,16 @@ def plot_evolution(t, data, labels=None, colors=None, styles=None , xlabel=None,
                 offset_v += 1
     
         # Agrandit légèrement les limites pour voir le texte
-        ax1.set_xlim(x_min, x_max + 0.15 * x_range)
-        ax1.set_ylim(y_min, y_max + 0.15 * y_range)
+        x_limit_right = x_max + 0.15 * x_range
+        y_limit_top   = y_max + 0.15 * y_range
+        x_limit_left  = x_min
+        y_limit_bot  = y_min
+        
             
     ax1.set_xlabel(xlabel)
     ax1.set_ylabel(ylabel)
     ax1.set_xlim(x_limit_left, x_limit_right)
+    ax1.set_ylim(y_limit_bot, y_limit_top)
     ax1.set_title(title)
     
     ax1.legend(loc="best") 
@@ -282,7 +287,7 @@ def plot_evolution(t, data, labels=None, colors=None, styles=None , xlabel=None,
         ax2.yaxis.set_major_locator(MaxNLocator(6))
     
         # ---------- LÉGENDE COMBINÉE ----------
-        
+        plt.setp(ax1.get_xticklabels(), rotation=45, ha='right')
         lines_1, labels_1 = ax1.get_legend_handles_labels()
         lines_2, labels_2 = ax2.get_legend_handles_labels()
         

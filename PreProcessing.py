@@ -183,9 +183,9 @@ def PreProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, Fuel, Oxidizer, co
                     x = flame.grid
                     dTdx = np.gradient(Temp, x)
                     thickness = (Temp.max() - Temp.min()) / np.max(np.abs(dTdx))
-                    thickness_mm = thickness * 1e-3
+                    thickness_mm = thickness * 1e3
 
-                    flame_time_ms = (thickness / Sl) * 1e-3
+                    flame_time_ms = (thickness / Sl) * 1e3
 
                     lambda_ = flame.thermal_conductivity[0]
                     rho = flame.gas.density
