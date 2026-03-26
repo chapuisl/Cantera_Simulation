@@ -105,12 +105,11 @@ def solver_free_flame( gas, ratio_refine =3.0,width_values=0.05, slope_values=0.
 
 
 
-def PreProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, Fuel, Oxidizer, configuration, file_path_csv,file_path_AVBP, Verbosity_level):
+def PreProcess_Flame1D(mechanisms,Fuel_name, Oxi_name, Fuel, Oxidizer, configuration, file_path_csv, Verbosity_level):
     Temperature      = configuration["conditions"]["Flame_1D"]["Temperature"]
     Pressure         = configuration["conditions"]["Flame_1D"]["Pressure"]
-    Equivalent_Ratio = configuration["conditions"]["Flame_1D"]["Phi"]
+    Equivalence_Ratio = configuration["conditions"]["Flame_1D"]["Phi"]
     
-    AVBP_sol         = configuration["outputs"]["Flame_1D"]["save_AVBP_solution"]
     Major_species    = configuration["outputs"]["Flame_1D"]["Major_species"]
     Radicals         = configuration["outputs"]["Flame_1D"]["Radicals"]
     
@@ -130,14 +129,6 @@ def PreProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, Fuel, Oxidizer, co
                 
             for indexP, P in enumerate(Pressure):
                 P_path = create_folder(T_path, f"{indexP:02}-Initial_Pressure_{P:.2f}bars")
-
-                # CSV paths
-                if AVBP_sol is True:
-                    file_path_AVBP_save = create_folder(file_path_AVBP,[
-                        f"{indexMech:02}-Kinetic_Mechanism_Used-{mech_name}" ,
-                        f"{indexT:02}-Initial_Temperature_{T:.2f}K" ,
-                        f"{indexP:02}-Initial_Pressure_{P:.2f}bars"])
-                        
                 Flame1D_prop_csv = os.path.join(P_path, f"results_{mech_name}_Species_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_T{T:.2f}_P{P:.2f}.csv")
                 
                 with open(Flame1D_prop_csv, "a", newline="") as f:
@@ -152,8 +143,8 @@ def PreProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, Fuel, Oxidizer, co
                         ])
                 
                 # ---------- CALCUL ----------
-                for indexPhi, eq_ratio in enumerate(Equivalent_Ratio):
-                    P_eq_path = create_folder(P_path, f"{indexPhi:02}-Equivalent_ratio_Phi-{eq_ratio:.2f}")
+                for indexPhi, eq_ratio in enumerate(Equivalence_Ratio):
+                    P_eq_path = create_folder(P_path, f"{indexPhi:02}-Equivalence_ratio_Phi-{eq_ratio:.2f}")
                     
                     Flame1D_csv = os.path.join(P_eq_path, f"species_results_{mech_name}_Species_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_T{T:.2f}_P{P:.2f}_Phi{eq_ratio:.2f}.csv")
                     os.makedirs(os.path.dirname(Flame1D_csv), exist_ok=True)
@@ -167,15 +158,7 @@ def PreProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, Fuel, Oxidizer, co
                     flame = solver_free_flame(gas)
                     
                     Verbosity_Flame1D(Verbosity_level, gas, flame)
-                    
-                    if AVBP_sol is True:
-                        
-                        nb_point = len(flame.grid)
-                        nb_species = len(flame.gas.species_names)
-                        
-                        filename = os.path.join(file_path_AVBP_save, f"Cantera_{nb_point}Grip_{nb_species}Species_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_{T:.2f}K_{P:.2f}B_Phi{eq_ratio:.2f}.csv")
-                        flame.save(filename, 'energy','overwrite = True')
-                            
+                         
                     Sl = flame.velocity[0]
                     no_rad = flame.to_array()
                     
@@ -256,7 +239,7 @@ def PreProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, Fuel, Oxidizer, co
 def PreProcess_Temperature_Adiabatic(mechanisms, MECH, Fuel_name, Oxi_name, Fuel, Oxidizer, configuration, file_path_csv, Verbosity_level):
     Temperature      = configuration["conditions"]["Temperature_Adiabatic"]["Temperature"]
     Pressure  = configuration["conditions"]["Temperature_Adiabatic"]["Pressure"]
-    Equivalent_Ratio = configuration["conditions"]["Temperature_Adiabatic"]["Phi"]
+    Equivalence_Ratio = configuration["conditions"]["Temperature_Adiabatic"]["Phi"]
     
     Final_Temperature    = configuration["outputs"]["Temperature_Adiabatic"]["Final_Temperature"]
     Final_density        = configuration["outputs"]["Temperature_Adiabatic"]["Final_density"]
@@ -291,7 +274,7 @@ def PreProcess_Temperature_Adiabatic(mechanisms, MECH, Fuel_name, Oxi_name, Fuel
                 Enthalpy_init = []
                 Enthalpy_end  = []
                 
-                for eq_ratio in Equivalent_Ratio:
+                for eq_ratio in Equivalence_Ratio:
                     print(f"→ Adiabatic Temperature: φ = {eq_ratio:.2f}   | T={T:.2f} K | P={P:.2f} bar")
                     gas = ct.Solution(mech_file)
                     gas.TP=T,P*1e5
@@ -324,7 +307,7 @@ def PreProcess_Temperature_Adiabatic(mechanisms, MECH, Fuel_name, Oxi_name, Fuel
 def PreProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, Fuel, Oxidizer, configuration, file_path_csv, Verbosity_level):
     Temperature       = configuration["conditions"]["Ignition_Delay_time"]["Temperature"]
     Pressure          = configuration["conditions"]["Ignition_Delay_time"]["Pressure"]
-    Equivalent_Ratio  = configuration["conditions"]["Ignition_Delay_time"]["Phi"]
+    Equivalence_Ratio  = configuration["conditions"]["Ignition_Delay_time"]["Phi"]
     
     IDT_plot           = configuration["outputs"]["Ignition_Delay_time"]["IDT_plot"]
     Time_evolution     = configuration["outputs"]["Ignition_Delay_time"]["time_evolution"]
@@ -341,8 +324,8 @@ def PreProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, Fuel, Oxidizer, config
         print(f"{'='*60}")
         indexMech += 1
     
-        for indexPhi, eq_ratio in enumerate(Equivalent_Ratio):
-            file_path_IDT_csv_mesh_phi = create_folder(file_path_IDT_csv_mesh, f"{indexPhi:02}-Equivalent_ratio_Phi-{eq_ratio:.2f}")
+        for indexPhi, eq_ratio in enumerate(Equivalence_Ratio):
+            file_path_IDT_csv_mesh_phi = create_folder(file_path_IDT_csv_mesh, f"{indexPhi:02}-Equivalence_ratio_Phi-{eq_ratio:.2f}")
             
     
             for indexP, P in enumerate(Pressure):
@@ -433,7 +416,7 @@ def PreProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, Fuel, Oxidizer, config
 def PreProcess_Gas_Composition(mechanisms, MECH, Fuel_name, Oxi_name, Fuel, Oxidizer, configuration, file_path_csv, Verbosity_level):
     Temnperature     = configuration["conditions"]["Gas_Composition"]["Temperature"]
     Pressure         = configuration["conditions"]["Gas_Composition"]["Pressure"]
-    Equivalent_Ratio = configuration["conditions"]["Gas_Composition"]["Phi"]
+    Equivalence_Ratio = configuration["conditions"]["Gas_Composition"]["Phi"]
     
     Fresh_gas    = configuration["outputs"]["Gas_Composition"]["Fresh_gas"]
     Burn_gas     = configuration["outputs"]["Gas_Composition"]["Burn_gas"]
@@ -452,7 +435,7 @@ def PreProcess_Gas_Composition(mechanisms, MECH, Fuel_name, Oxi_name, Fuel, Oxid
                 file_path_Composition_M_T_P_csv=create_folder(file_path_Composition_M_T_csv,f"{indexP:02}-Initial_Pressure_{P:.2f}bars")
                 
                        
-                for indexPhi,eq_ratio in enumerate(Equivalent_Ratio):
+                for indexPhi,eq_ratio in enumerate(Equivalence_Ratio):
                     file_path_Composition_M_T_P_phi_csv=create_folder(file_path_Composition_M_T_P_csv,f"{indexPhi:02}-Equivqlent_Ratio_{eq_ratio:.2f}")
                     print(f"→ Gas Composition: φ = {eq_ratio:.2f}   | T={T:.2f} K | P={P:.2f} bar")
                     print()

@@ -141,7 +141,7 @@ def plot_evolution(t, data, labels=None, colors=None, styles=None , xlabel=None,
         ax1.yaxis.set_major_locator(MaxNLocator(6))
         ax1.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
-   
+    fig.autofmt_xdate(rotation=45, ha='center')
     ax1.grid(True, which="both")
     ax1.set_yscale(type_y_scale)
     ax1.set_xscale(type_x_scale)
@@ -283,7 +283,7 @@ def plot_evolution(t, data, labels=None, colors=None, styles=None , xlabel=None,
             secondary_ylabel if secondary_ylabel else "",
             color= '0.0' 
         )
-        ax2.tick_params(axis='y', labelcolor=sec_color[0])
+        ax2.tick_params(axis='y', labelcolor=sec_color[0])  
         ax2.yaxis.set_major_locator(MaxNLocator(6))
     
         # ---------- LÉGENDE COMBINÉE ----------
@@ -309,7 +309,7 @@ def plot_evolution(t, data, labels=None, colors=None, styles=None , xlabel=None,
         if labels:
             ax1.legend(loc=legend_loc)
     
-    plt.tight_layout()
+    #plt.tight_layout()
     
     if save_fig and save_path is not None:
         save_dir = os.path.join(save_path)

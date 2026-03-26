@@ -79,9 +79,10 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
     
     Temperature      = configuration["conditions"]["Flame_1D"]["Temperature"]
     Pressure         = configuration["conditions"]["Flame_1D"]["Pressure"]
-    Equivalent_Ratio = configuration["conditions"]["Flame_1D"]["Phi"]
-    
-    AVBP_sol         = configuration["outputs"]["Flame_1D"]["save_AVBP_solution"]
+    Equivalence_Ratio = configuration["conditions"]["Flame_1D"]["Phi"]
+    Min_Limit_Equivalence_Ratio = Equivalence_Ratio[0] - 0.5* Equivalence_Ratio[0]
+    Max_Limit_Equivalence_Ratio = Equivalence_Ratio[-1]+ 0.5* Equivalence_Ratio[0]
+
     Flame_speed      = configuration["outputs"]["Flame_1D"]["flame_speed"]
     Flame_Time       = configuration["outputs"]["Flame_1D"]["flame_time"]
     Flame_thickness  = configuration["outputs"]["Flame_1D"]["flame_thickness"]
@@ -92,13 +93,15 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
     
     for indexT, T in enumerate(Temperature):
         path_T = create_folder(file_path_plot, f"{indexT:02}-Initial_Temperature_{T:.2f}K")
-        path_T_spe = create_folder(file_path_plot, f"{indexT:02}-Initial_Temperature_{T:.2f}K")
+        if Emissions is True:
+            file_path_spe_plot = create_folder(file_path_species_plot, f"{indexT:02}-Initial_Temperature_{T:.2f}K")
         file_path_flame_prop = create_folder(path_T, "00-Flame_Property_Evolution")
     
        
         for indexP,P in enumerate(Pressure):
             path_P = create_folder(path_T, f"{indexP:02}-Initial_Pressure_{P:.2f}bars")
-            path_P_spe = create_folder(file_path_species_plot, f"{indexP:02}-Initial_Pressure_{P:.2f}bars")
+            if Emissions is True:
+                path_P_spe = create_folder(file_path_spe_plot, f"{indexP:02}-Initial_Pressure_{P:.2f}bars")
     
             Speed_list     = []
             Thickness_list = []
@@ -137,9 +140,11 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
 
             if Flame_speed:
                 plot_evolution(
-                    Equivalent_Ratio, Speed_list, MECH, COLOR, STYLE,
+                    Equivalence_Ratio, Speed_list, MECH, COLOR, STYLE,
                     ylabel="Sl [m/s]",
                     xlabel="φ [-]",
+                    x_limit_left= Min_Limit_Equivalence_Ratio,
+                    x_limit_right= Max_Limit_Equivalence_Ratio,
                     save_fig=Save_plot,
                     save_path=file_path_flame_prop,
                     name_fig=f"Flame_Speed_evolution_for_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_T_{T:.2f}K_and_P_{P:.2f}bars",
@@ -148,9 +153,11 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
     
             if Flame_thickness:
                 plot_evolution(
-                    Equivalent_Ratio, Thickness_list, MECH, COLOR,STYLE,
+                    Equivalence_Ratio, Thickness_list, MECH, COLOR,STYLE,
                     ylabel="δl [mm]",
                     xlabel="φ [-]",
+                    x_limit_left= Min_Limit_Equivalence_Ratio,
+                    x_limit_right= Max_Limit_Equivalence_Ratio,
                     save_fig=Save_plot,
                     save_path=file_path_flame_prop,
                     name_fig=f"Flame_Thickness_evolution_for_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_T_{T:.2f}K_and_P_{P:.2f}bars",
@@ -159,9 +166,11 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
     
             if Flame_Time:
                 plot_evolution(
-                    Equivalent_Ratio, Time_list, MECH, COLOR,STYLE,
+                    Equivalence_Ratio, Time_list, MECH, COLOR,STYLE,
                     ylabel="Flame Time [ms]",
                     xlabel="φ [-]",
+                    x_limit_left= Min_Limit_Equivalence_Ratio,
+                    x_limit_right= Max_Limit_Equivalence_Ratio,
                     save_fig=Save_plot,
                     save_path=file_path_flame_prop,
                     name_fig=f"Flame_Time_evolution_for_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_T_{T:.2f}K_and_P_{P:.2f}bars",
@@ -169,18 +178,21 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                 )
     
                 plot_evolution(
-                    Equivalent_Ratio, Da_list, MECH, COLOR,STYLE,
+                    Equivalence_Ratio, Da_list, MECH, COLOR,STYLE,
                     ylabel="Da [-]",
                     xlabel="φ [-]",
+                    x_limit_left= Min_Limit_Equivalence_Ratio,
+                    x_limit_right= Max_Limit_Equivalence_Ratio,
                     save_fig=Save_plot,
                     save_path=file_path_flame_prop,
                     name_fig=f"Fuel_Damkohler_Number_evolution_for_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_T_{T:.2f}K_and_P_{P:.2f}bars",
                     # marker='o'
                 )
-            for indexPhi, eq_ratio in enumerate(Equivalent_Ratio):
-                P_eq_path = create_folder(path_P, f"{indexPhi:02}-Equivalent_ratio_Phi-{eq_ratio:.2f}")
-                P_eq_path_spe = create_folder(path_P_spe, f"{indexPhi:02}-Equivalent_ratio_Phi-{eq_ratio:.2f}")
-                print(f"\t  -> PROCESSING: Pressure {P:.2f} bar / Temeperature {T:.2f} K/  Equivalent Ratio {eq_ratio:.2f}")
+            for indexPhi, eq_ratio in enumerate(Equivalence_Ratio):
+                P_eq_path = create_folder(path_P, f"{indexPhi:02}-Equivalence_ratio_Phi-{eq_ratio:.2f}")
+                if Emissions is True:
+                    P_eq_path_spe = create_folder(path_P_spe, f"{indexPhi:02}-Equivalence_ratio_Phi-{eq_ratio:.2f}")
+                print(f"\t  -> PROCESSING: Pressure {P:.2f} bar / Temeperature {T:.2f} K/  Equivalence Ratio {eq_ratio:.2f}")
                 
                 Grid_list          = []
                 Temperature_list   = []
@@ -204,7 +216,7 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                         f"{mech_index:02}-Kinetic_Mechanism_Used-{mech_name}",
                         f"{indexT:02}-Initial_Temperature_{T:.2f}K",
                         f"{indexP:02}-Initial_Pressure_{P:.2f}bars",
-                        f"{indexPhi:02}-Equivalent_ratio_Phi-{eq_ratio:.2f}",
+                        f"{indexPhi:02}-Equivalence_ratio_Phi-{eq_ratio:.2f}",
                         f"species_results_{mech_name}_Species_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_T{T:.2f}_P{P:.2f}_Phi{eq_ratio:.2f}.csv")
                     
                     with open(csv_path, mode='r') as csv_file:
@@ -221,7 +233,7 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
             
                             Grid.append(float(row["Grid [m]"]) * 1e3)
                             Temp.append(float(row["Temperature [K]"]))
-                            HRR.append(float(row["Heat Release [W/m3]"]))
+                            HRR.append(float(row["Heat Release [W/m3]"])*1e-9)
                             U.append(float(row["Axial Velocity [m/s]"]))
                             Rho.append(float(row["Density [kg/m3]"]))
             
@@ -285,7 +297,7 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                     x_limit_left= x_left, 
                     x_limit_right= x_right,
                     secondary_data=HRR_list, 
-                    secondary_ylabel="HRR [W/m3] -- ",        
+                    secondary_ylabel="HRR [GW/m$^3$] $-$$-$ ",        
                     save_fig=Save_plot,
                     save_path=P_eq_path,
                     name_fig=f"Temperature_HRR_flame1D_evolution_for_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_T{T:.2f}_and_P_{P:.2f}bars",
@@ -295,7 +307,7 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                 
                 plot_evolution(
                     Grid_list , HRR_list, MECH, COLOR,STYLE,
-                    ylabel="HRR [W/m3]",
+                    ylabel="HRR [GW/m$^3$] $-$$-$",
                     xlabel="d [mm]",
                     x_limit_left= x_left, 
                     x_limit_right= x_right,     
@@ -312,7 +324,7 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                     x_limit_left= x_left, 
                     x_limit_right= x_right,
                     secondary_data=Rho_flame_list, 
-                    secondary_ylabel="$\rho$ [kg/m$^3$] -- ",
+                    secondary_ylabel=r"$\rho$ [kg/m$^3$] $-$$-$",
                     save_fig=Save_plot,
                     save_path=P_eq_path,
                     name_fig=f"Temperature_RHO_flame1D_evolution_for_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_T{T:.2f}_and_P_{P:.2f}bars",
@@ -356,7 +368,7 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                             if k in Major_species:
                                 plot_evolution(
                                     Grid_inter , SPECIES_inter, MECH_inter, COLOR,STYLE,
-                                    ylabel=f"Mass fraction [{key}]",
+                                    ylabel=f"Y_[{key}]",
                                     xlabel="Distance [mm]",
                                     x_limit_left= x_left, 
                                     x_limit_right= x_right,
@@ -368,7 +380,7 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                             elif k in Radicals:
                                 plot_evolution(
                                     Grid_inter , SPECIES_inter, MECH_inter, COLOR,STYLE,
-                                    ylabel=f"Mass fraction [{key}]",
+                                    ylabel=f"Y_{key}]",
                                     xlabel="Distance [mm]",
                                     x_limit_left= x_left, 
                                     x_limit_right= x_right,
@@ -403,7 +415,7 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                             if k in Major_species:
                                 plot_evolution(
                                     Grid_inter , SPECIES_inter, MECH_inter, COLOR,STYLE,
-                                    ylabel=f"Molar fraction [{key}]",
+                                    ylabel=f"X_[{key}]",
                                     xlabel="Distance [mm]",
                                     x_limit_left= x_left, 
                                     x_limit_right= x_right,
@@ -416,7 +428,7 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                                 X_ppm = [[val * 1e6 for val in sublist] for sublist in SPECIES_inter]
                                 plot_evolution(
                                     Grid_inter , X_ppm, MECH_inter, COLOR,STYLE,
-                                    ylabel=f"Molar fraction [{key} ppm]",
+                                    ylabel=f"X_[{key} ppm]",
                                     xlabel="Distance [mm]",
                                     x_limit_left= x_left, 
                                     x_limit_right= x_right,
@@ -471,11 +483,11 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                         )
                     
                         plots = [
-                            (Maj_Y, name_key_Maj, "Mass fraction ", "Mass_fraction_Major_species"),
-                            (Rad_Y, name_key_Rad, "Mass fraction ", "Mass_fraction_Radical_species"),
-                            (Maj_Y + Rad_Y, name_key_Maj + name_key_Rad, "Mass fraction ", "Mass_fraction_Total_species"),
-                            (Maj_X, name_key_Maj, "Molar fraction ", "Molar_fraction_Major_species"),
-                            (Rad_X, name_key_Rad, "Molar fraction ", "Molar_fraction_Radical_species"),
+                            (Maj_Y, name_key_Maj, "Y [] ", "Mass_fraction_Major_species"),
+                            (Rad_Y, name_key_Rad, "Y []", "Mass_fraction_Radical_species"),
+                            (Maj_Y + Rad_Y, name_key_Maj + name_key_Rad, "Y []", "Mass_fraction_Total_species"),
+                            (Maj_X, name_key_Maj, "Y [] ", "Molar_fraction_Major_species"),
+                            (Rad_X, name_key_Rad, "Y [] ", "Molar_fraction_Radical_species"),
                         ]
     
                         for data, labels, ylabel, suffix in plots:
@@ -502,7 +514,7 @@ def PostProcess_Temperature_Adiabatic(mechanisms, MECH, Fuel_name, Oxi_name, con
     
     Temperature      = configuration["conditions"]["Temperature_Adiabatic"]["Temperature"]
     Pressure  = configuration["conditions"]["Temperature_Adiabatic"]["Pressure"]
-    Equivalent_Ratio = configuration["conditions"]["Temperature_Adiabatic"]["Phi"]
+    Equivalence_Ratio = configuration["conditions"]["Temperature_Adiabatic"]["Phi"]
     
     Final_Temperature    = configuration["outputs"]["Temperature_Adiabatic"]["Final_Temperature"]
     Final_density        = configuration["outputs"]["Temperature_Adiabatic"]["Final_density"]
@@ -537,7 +549,7 @@ def PostProcess_Temperature_Adiabatic(mechanisms, MECH, Fuel_name, Oxi_name, con
                     Temp, Rho, H_init, H_final = [], [], [], []
                     for row in reader:
                         Temp.append(float(row["Adiabatic Temperature [K]"]))
-                        Rho.append(float(row["Density [kg/m3]"]))
+                        Rho.append(float(row["Density [kg/m$^3$] "]))
                         H_init.append(float(row["Initial Enthalpy [J/kg]"]))
                         H_final.append(float(row["Final Enthalpy [J/kg]"]))
                        
@@ -547,7 +559,7 @@ def PostProcess_Temperature_Adiabatic(mechanisms, MECH, Fuel_name, Oxi_name, con
                     Enthalpy_Conseration_list.append([abs(H_final[i]-H_init[i])/H_final[i] *100 for i in range(len(H_init))])
                     Density_list.append(Rho)
                     
-                    PhimaxPhi.append(Equivalent_Ratio[Temp.index(np.max(Temp))])
+                    PhimaxPhi.append(Equivalence_Ratio[Temp.index(np.max(Temp))])
                     TemMax.append(np.max(Temp))
                     orientationPhi.append('V')
                     orientationT.append('H')
@@ -555,11 +567,11 @@ def PostProcess_Temperature_Adiabatic(mechanisms, MECH, Fuel_name, Oxi_name, con
                 
                 
             if Final_Temperature is True:
-                plot_evolution(Equivalent_Ratio, data=Temperature_list,
+                plot_evolution(Equivalence_Ratio, data=Temperature_list,
                                        labels=MECH,
                                        colors=COLOR,
                                        ylabel= " T [K]",
-                                       xlabel= r"φ [-]",
+                                       xlabel= "φ [-]",
                                        line_value=PhimaxPhi+TemMax, line_orientation=orientationPhi+orientationT, 
                                        plot_fig = False ,
                                        save_fig = Save_plot, 
@@ -569,11 +581,11 @@ def PostProcess_Temperature_Adiabatic(mechanisms, MECH, Fuel_name, Oxi_name, con
                                        )
             
             if Final_Enthalpy is True:
-                plot_evolution(Equivalent_Ratio, data=Enthalpy_Conseration_list,
+                plot_evolution(Equivalence_Ratio, data=Enthalpy_Conseration_list,
                                        labels=MECH,
                                        colors=COLOR,
                                        ylabel= "Percentage [%]",
-                                       xlabel= r"φ [-]",
+                                       xlabel= "φ [-]",
                                        plot_fig = False ,
                                        save_fig = Save_plot, 
                                        save_path = file_path_Adiabatic_Temperature_P,
@@ -581,11 +593,11 @@ def PostProcess_Temperature_Adiabatic(mechanisms, MECH, Fuel_name, Oxi_name, con
                                        marker = 'o'
                                        )
                 
-                plot_evolution(Equivalent_Ratio, data=Enthalpy_Final_list,
+                plot_evolution(Equivalence_Ratio, data=Enthalpy_Final_list,
                                        labels=MECH,
                                        colors=COLOR,
                                        ylabel= "h [J/kg]",
-                                       xlabel= r"φ [p-hi]",
+                                       xlabel= "φ [p-hi]",
                                        plot_fig = False ,
                                        save_fig = Save_plot, 
                                        save_path = file_path_Adiabatic_Temperature_P,
@@ -594,11 +606,11 @@ def PostProcess_Temperature_Adiabatic(mechanisms, MECH, Fuel_name, Oxi_name, con
                                        )
     
             if Final_density is True:    
-                plot_evolution(Equivalent_Ratio, data=Density_list,
+                plot_evolution(Equivalence_Ratio, data=Density_list,
                                        labels=MECH,
                                        colors=COLOR,
-                                       ylabel= " $\rho$ [kg/m$^3$]",
-                                       xlabel= r"φ [-]",
+                                       ylabel= r" $\rho$ [kg/m$^3$]",
+                                       xlabel= "φ [-]",
                                        plot_fig = False ,
                                        save_fig = Save_plot, 
                                        save_path = file_path_Adiabatic_Temperature_P,
@@ -606,24 +618,23 @@ def PostProcess_Temperature_Adiabatic(mechanisms, MECH, Fuel_name, Oxi_name, con
                                        # marker = 'o')
                                        )
   
-                   
 def PostProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, configuration, file_path_csv,file_path_plot,Save_plot):
     COLOR = GC.Black_Purple()
     GC.config_plot()
     
     Temperature       = configuration["conditions"]["Ignition_Delay_time"]["Temperature"]
     Pressure          = configuration["conditions"]["Ignition_Delay_time"]["Pressure"]
-    Equivalent_Ratio  = configuration["conditions"]["Ignition_Delay_time"]["Phi"]
+    Equivalence_Ratio  = configuration["conditions"]["Ignition_Delay_time"]["Phi"]
     
     IDT_plot           = configuration["outputs"]["Ignition_Delay_time"]["IDT_plot"]
     Time_evolution     = configuration["outputs"]["Ignition_Delay_time"]["time_evolution"]
     Complementary_plot = configuration["outputs"]["Ignition_Delay_time"]["complementary_plot"]
     
-    for indexPhi, eq_ratio in enumerate(Equivalent_Ratio):
-        file_path_IDT_phi = create_folder(file_path_plot, f"{indexPhi:02}-Equivalent_ratio_Phi-{eq_ratio:.2f}")
+    for indexPhi, eq_ratio in enumerate(Equivalence_Ratio):
+        file_path_IDT_phi = create_folder(file_path_plot, f"{indexPhi:02}-Equivalence_ratio_Phi-{eq_ratio:.2f}")
         for indexP, P in enumerate(Pressure):
             file_path_IDT_phi_P = create_folder(file_path_IDT_phi, f"{indexP:02}-Initial_Pressure_{P:.2f}bars")
-            print(f"\t  -> PROCESSING: Pressure {P:.2f} bar / Equivalent Ratio phi:{eq_ratio:.2f}")
+            print(f"\t  -> PROCESSING: Pressure {P:.2f} bar / Equivalence Ratio phi:{eq_ratio:.2f}")
             IDT_list         = []
             Temperature_list = []
             
@@ -636,7 +647,7 @@ def PostProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, configuration, file_p
                 csv_path = os.path.join(
                     file_path_csv,
                     f"{mech_index:02}-Kinetic_Mechanism_Used-{mech_name}",
-                    f"{indexPhi:02}-Equivalent_ratio_Phi-{eq_ratio:.2f}",
+                    f"{indexPhi:02}-Equivalence_ratio_Phi-{eq_ratio:.2f}",
                     f"{indexP:02}-Initial_Pressure_{P:.2f}bars",
                     f"results_{mech_name}_Species_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_Phi{eq_ratio:.0f}_P{P:.2f}.csv")
                 
@@ -660,8 +671,8 @@ def PostProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, configuration, file_p
                     labels=MECH,
                     colors=COLOR,
                     type_y_scale='log',
-                    ylabel=r'IDT [ms]',
-                    xlabel=r'1000/T [1/K]',
+                    ylabel='IDT [ms]',
+                    xlabel='1000/T [1/K]',
                     plot_fig=False,
                     save_fig=Save_plot,
                     save_path=file_path_IDT_phi_P,
@@ -670,7 +681,7 @@ def PostProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, configuration, file_p
                 )
             
             for indexT, T in enumerate(Temperature):
-                print(f"\t  -> PROCESSING: Pressure {P:.2f} bar / Equivalent Ratio phi:{eq_ratio:.2f} , Temperature:{T:.2f} ")
+                print(f"\t  -> PROCESSING: Pressure {P:.2f} bar / Equivalence Ratio phi:{eq_ratio:.2f} , Temperature:{T:.2f} ")
                 file_path_IDT_phi_P_T = create_folder(file_path_IDT_phi_P, f"{indexT:02}-Initial_Temperature_{T:.2f}K")
                 
                 Time_list          = []
@@ -683,7 +694,7 @@ def PostProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, configuration, file_p
                     csv_path = os.path.join(
                         file_path_csv, 
                         f"{list(mechanisms.keys()).index(mech_name):02}-Kinetic_Mechanism_Used-{mech_name}",
-                        f"{indexPhi:02}-Equivalent_ratio_Phi-{eq_ratio:.2f}",
+                        f"{indexPhi:02}-Equivalence_ratio_Phi-{eq_ratio:.2f}",
                         f"{indexP:02}-Initial_Pressure_{P:.2f}bars",
                         f"{indexT:02}-Initial_Temperature_{T:.2f}K",
                         f"results_time_{mech_name}_Species_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_Phi{eq_ratio:.0f}_P{P:.2f}.csv"
@@ -715,7 +726,7 @@ def PostProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, configuration, file_p
                         ylabel="T [K]",
                         xlabel="Time [ms]",
                         secondary_data=HRR_list, 
-                        secondary_ylabel="HRR [W/m3] -- ",
+                        secondary_ylabel="HRR [W/m$^3$] $-$ $-$ ",
                         save_fig=Save_plot,
                         save_path=file_path_IDT_phi_P_T_time,
                         name_fig=f"Temperature_evolution_for_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_T_{T:.2f}K_and_P_{P:.2f}bars",
@@ -734,7 +745,7 @@ def PostProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, configuration, file_p
                     
                     plot_evolution(
                         Time_list , OH_radical_list, MECH, COLOR,
-                        ylabel="Molar fraction [OH]",
+                        ylabel="Y_[OH]",
                         xlabel="Time [ms]",
                         save_fig=Save_plot,
                         save_path=file_path_IDT_phi_P_T_time,
@@ -746,7 +757,7 @@ def PostProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, configuration, file_p
                     
                     plot_evolution(
                         Pressure_list , OH_radical_list, MECH, COLOR,
-                        ylabel="X [OH]",
+                        ylabel="X_[OH]",
                         xlabel="P [bar]",
                         save_fig=Save_plot,
                         save_path=file_path_IDT_phi_P_T_comp,
@@ -756,7 +767,7 @@ def PostProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, configuration, file_p
                     
                     plot_evolution(
                         Temperature_list , OH_radical_list, MECH, COLOR,
-                        ylabel="X [OH]",
+                        ylabel="X_[OH]",
                         xlabel="T [K]",
                         save_fig=Save_plot,
                         save_path=file_path_IDT_phi_P_T_comp,
@@ -766,8 +777,8 @@ def PostProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, configuration, file_p
                     
                     plot_evolution(
                         HRR_list , OH_radical_list, MECH, COLOR,
-                        ylabel="X [OH]",
-                        xlabel="HRR [W/m3]",
+                        ylabel="X_[OH]",
+                        xlabel="HRR [W/m$^3$]",
                         save_fig=Save_plot,
                         save_path=file_path_IDT_phi_P_T_comp,
                         name_fig=f"OH_evolution_fct_HRR_for_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_T_{T:.2f}K_and_P_{P:.2f}bars",
@@ -776,7 +787,7 @@ def PostProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, configuration, file_p
                     
                     plot_evolution(
                         Temperature_list , HRR_list, MECH, COLOR,
-                        ylabel="HRR [W/m3] ",
+                        ylabel="HRR [W/m$^3$] ",
                         xlabel="T [K]",
                         save_fig=Save_plot,
                         save_path=file_path_IDT_phi_P_T_comp,
@@ -981,7 +992,7 @@ def PostProcess_Counter_flow(mechanisms, MECH, Fuel_name, Oxi_name, configuratio
                 x_limit_left= x_left, 
                 x_limit_right= x_right,
                 secondary_data=HRR_list, 
-                secondary_ylabel="HRR [W/m3] -- ",        
+                secondary_ylabel="HRR [W/m$^3$] $-$ $-$ ",        
                 save_fig=Save_plot,
                 save_path=path_T_CF_V_P,
                 name_fig=f"Temperature_HRR_diffusion_flame_evolution_for_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_Tfuel{T[0]:.0f}_Toxi{T[1]:.0f}_and_P_{P:.2f}bars",
@@ -995,7 +1006,7 @@ def PostProcess_Counter_flow(mechanisms, MECH, Fuel_name, Oxi_name, configuratio
                 x_limit_left= x_left, 
                 x_limit_right= x_right,
                 secondary_data=Z_list, 
-                secondary_ylabel="Mixture fraction -- ",        
+                secondary_ylabel="Y [] -- ",        
                 save_fig=Save_plot,
                 save_path=path_T_CF_V_P,
                 name_fig=f"Temperature_MixtureFraction_diffusion_flame_evolution_for_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_Tfuel{T[0]:.0f}_Toxi{T[1]:.0f}_and_P_{P:.2f}bars",
@@ -1004,12 +1015,12 @@ def PostProcess_Counter_flow(mechanisms, MECH, Fuel_name, Oxi_name, configuratio
             
             plot_evolution(
                 Grid_list , HRR_list, MECH, COLOR,
-                ylabel="HRR [W/m3]",
+                ylabel="HRR [W/m$^3$]",
                 xlabel="d [mm]",
                 x_limit_left= x_left, 
                 x_limit_right= x_right,
                 secondary_data=Z_list, 
-                secondary_ylabel="Mixture frqction -- ",        
+                secondary_ylabel="Y []-- ",        
                 save_fig=Save_plot,
                 save_path=path_T_CF_V_P,
                 name_fig=f"HRR_MixtureFraction_diffusion_flame_evolution_for_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_Tfuel{T[0]:.0f}_Toxi{T[1]:.0f}_and_P_{P:.2f}bars",
@@ -1023,7 +1034,7 @@ def PostProcess_Counter_flow(mechanisms, MECH, Fuel_name, Oxi_name, configuratio
                 x_limit_left= x_left, 
                 x_limit_right= x_right,
                 secondary_data=Rho_flame_list, 
-                secondary_ylabel="Density [kg/m3] -- ",
+                secondary_ylabel=r"$\rho$ [kg/m$^3$] $-$$-$ ",
                 save_fig=Save_plot,
                 save_path=path_T_CF_V_P,
                 name_fig=f"Temperature_RHO_diffusion_flame_evolution_for_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_Tfuel{T[0]:.0f}_Toxi{T[1]:.0f}_and_P_{P:.2f}bars",
@@ -1142,7 +1153,7 @@ def PostProcess_Counter_flow(mechanisms, MECH, Fuel_name, Oxi_name, configuratio
                         X_ppm = [[val * 1e6 for val in sublist] for sublist in SPECIES_inter]
                         plot_evolution(
                             Grid_inter , X_ppm, MECH_inter, COLOR,
-                            ylabel=f"Molar fraction [{key} ppm]",
+                            ylabel=f"Y_[{key} ppm]",
                             xlabel="Distance [mm]",
                             x_limit_left= x_left, 
                             x_limit_right= x_right,
@@ -1194,11 +1205,11 @@ def PostProcess_Counter_flow(mechanisms, MECH, Fuel_name, Oxi_name, configuratio
                 )
             
                 plots = [
-                    (Maj_Y, name_key_Maj, "Y ", "Mass_fraction_Major_species"),
-                    (Rad_Y, name_key_Rad, "Y ", "Mass_fraction_Radical_species"),
-                    (Maj_Y + Rad_Y, name_key_Maj + name_key_Rad, "Y ", "Mass_fraction_Total_species"),
-                    (Maj_X, name_key_Maj, "Y ", "Molar_fraction_Major_species"),
-                    (Rad_X, name_key_Rad, "Y ", "Molar_fraction_Radical_species"),
+                    (Maj_Y, name_key_Maj, "Y [] ", "Mass_fraction_Major_species"),
+                    (Rad_Y, name_key_Rad, "Y [] ", "Mass_fraction_Radical_species"),
+                    (Maj_Y + Rad_Y, name_key_Maj + name_key_Rad, "Y [] ", "Mass_fraction_Total_species"),
+                    (Maj_X, name_key_Maj, "Y [] ", "Molar_fraction_Major_species"),
+                    (Rad_X, name_key_Rad, "Y [] ", "Molar_fraction_Radical_species"),
                 ]
 
                 for data, labels, ylabel, suffix in plots:

@@ -160,7 +160,6 @@ def main_process(parameter_coupling):
         Bash_Pressure_Flame1D  = configuration["conditions"]["Flame_1D"]["Pressure"]
         Bash_EquiRatio_Flame1D = configuration["conditions"]["Flame_1D"]["Phi"]
         
-        AVBP_sol         = configuration["outputs"]["Flame_1D"]["save_AVBP_solution"]
         Flame_speed      = configuration["outputs"]["Flame_1D"]["flame_speed"]
         Flame_Time       = configuration["outputs"]["Flame_1D"]["flame_time"]
         Flame_thickness  = configuration["outputs"]["Flame_1D"]["flame_thickness"]
@@ -186,12 +185,11 @@ def main_process(parameter_coupling):
          Mechanisms                        :  {MECH}
          Number of Pressure Point          :  {len(Bash_Pressure_Flame1D)} 
          Number of Temeprature Point       :  {len(Bash_Temp_Flame1D)} 
-         Number of Equivalent ratio Point  :  {len(Bash_EquiRatio_Flame1D)} 
+         Number of Equivalence ratio Point :  {len(Bash_EquiRatio_Flame1D)} 
          Total Number calcul point         :  {len(MECH)*len(Bash_Pressure_Flame1D) * len(Bash_Temp_Flame1D) * len(Bash_EquiRatio_Flame1D)}
         
          -----------------------------------------------------------
         
-         SAVE Flame sumilation        : {AVBP_sol}
          SAVE Plot Flame Speed        : {Flame_speed}
          SAVE Plot Flame Time         : {Flame_Time}
          SAVE Plot Flame Thickmess    : {Flame_thickness}
@@ -216,10 +214,6 @@ def main_process(parameter_coupling):
         else:
             file_path_species = None
         
-        if AVBP_sol is True:
-            file_path_AVBP = create_folder(file_name +"/" + subfolders[4], "00-Flame_1D")
-        else:
-            file_path_AVBP = None
             
         print(Fore.WHITE + """
         ############################################################
@@ -229,16 +223,13 @@ def main_process(parameter_coupling):
         ############################################################
         """)
         print(Style.RESET_ALL)
-
         PreProcess_Flame1D(mechanisms, 
-                           MECH, 
                            Fuel_name, 
                            Oxi_name,
                            Fuel,
                            Oxidizer, 
                            configuration, 
                            file_path_flame_csv,
-                           file_path_AVBP,
                            Verbosity_level)
                                  
         print(Fore.YELLOW + 80*"_")
@@ -287,7 +278,7 @@ def main_process(parameter_coupling):
         Mechanisms                        :  {MECH}
         Number of Pressure Point          :  {len(Bash_Pressure_IDT)} 
         Number of Temeprature Point       :  {len(Bash_Temp_IDT)} 
-        Number of Equivalent ratio Point  :  {len(Bash_EquiRatio_IDT)} 
+        Number of Equivalence ratio Point  :  {len(Bash_EquiRatio_IDT)} 
         Total Number calcul point         :  {len(MECH)*len(Bash_Pressure_IDT) * len(Bash_Temp_IDT) * len(Bash_EquiRatio_IDT)}
         
         ----------------------------------------------------------
@@ -372,7 +363,7 @@ def main_process(parameter_coupling):
          Mechanisms                        :  {MECH}
          Number of Pressure Point          :  {len(Bash_Pressure_Adiabatic)} 
          Number of Temeprature Point       :  {len(Bash_Temp_Adiabatic)} 
-         Number of Equivalent ratio Point  :  {len(Bash_EquiRatio_Adiabatic)} 
+         Number of Equivalence ratio Point  :  {len(Bash_EquiRatio_Adiabatic)} 
          Total Number calcul point         :  {len(MECH)*len(Bash_Pressure_Adiabatic) * len(Bash_Temp_Adiabatic) * len(Bash_EquiRatio_Adiabatic)}
         
          -----------------------------------------------------------
@@ -454,7 +445,7 @@ def main_process(parameter_coupling):
          Mechanisms                        :  {MECH}
          Number of Pressure Point          :  {len(Bash_Pressure_Composition)} 
          Number of Temeprature Point       :  {len(Bash_Temp_Composition)} 
-         Number of Equivalent ratio Point  :  {len(Bash_EquiRatio_Composition)} 
+         Number of Equivalence ratio Point  :  {len(Bash_EquiRatio_Composition)} 
          Total Number calcul point         :  {len(MECH)*len(Bash_Pressure_Composition) * len(Bash_Temp_Composition) * len(Bash_EquiRatio_Composition)}
         
          -----------------------------------------------------------
