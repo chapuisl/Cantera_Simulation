@@ -356,27 +356,40 @@ def PreProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, Fuel, Oxidizer, config
                     r = ct.Reactor(gas, clone=False)
                     net = ct.ReactorNet([r])
                     t = 0
-                    Time         = []
+                    Time              = []
+                    Time_ms           = []
                     Temperature_list  = []
-                    Heat_release = []
+                    Heat_release      = []
                     Pressure_list     = []
-                    OH           = []
-
+                    OH                = []
+                    i=0
                     while t < estimated_ignition_delay_time:
                         t = net.step()
-                        Time.append(t * 1000)
+                        Time.append(t)
+                        Time_ms.append(t * 1000)
                         Temperature_list.append(gas.T)
                         Pressure_list.append(gas.P / 1e5) 
-                        Heat_release.append(gas.heat_release_rate / 1e6)
+                        Heat_release.append(gas.heat_release_rate)
                         OH.append(gas['OH'].X[0])
+                        if t > 2:
+                            if Heat_release[i] < Heat_release[i-1]:
+                                break
+                        i+=1
+                    
+                    Time.pop()
+                    Time_ms.pop()
+                    Temperature_list.pop()
+                    Pressure_list.pop()
+                    Heat_release.pop()
+                    OH.pop()
 
                     i_max = Heat_release.index(max(Heat_release))
-                    IDT.append(Time[i_max])
+                    IDT.append(Time_ms[i_max])
                     
                     Verbosity_IDT(Verbosity_level, gas, IDT[-1], i_max)
                     
                     headers = [
-                        "Time [ms]",
+                        "Time [s]",
                         "Temperature [K]",
                         "Heat Release [W/m3]",
                         "Pressure [bar]",
@@ -730,12 +743,16 @@ def PreProcess_Counter_flow_quenching(mechanisms, MECH, Fuel_name, Oxi_name, Fue
                 flame.boundary_emissivities = 0.0, 0.0
                 flame.radiation_enabled = False
  
-                flame.set_refine_criteria(ratio=5, slope=0.1, curve=0.2, prune=0.03)
+                flame.set_refine_criteria(ratio=3, slope=0.05, curve=0.1, prune=0.02)
+
+                # Augmenter la tolérance du solveur pour les flammes difficiles
+                flame.set_max_jac_age(10, 10)
+                flame.set_time_step(1e-6, [2, 5, 10, 20])
 
                 print('\t --> START Creating the initial solution')
                 print(f'\t \t Oxidizer Velocity {Velocity_o}  |   Fuel Velocity: {Velocity_f}')
                 flame.solve(loglevel, refine_grid=True, auto=True)
-                print('\t Temperature flame:', np.max(flame.T))
+                print('\t     Temperature flame:', np.max(flame.T))
                 print('\t --> END Creating the initial solution')
                 print('\n')
                 
@@ -756,7 +773,11 @@ def PreProcess_Counter_flow_quenching(mechanisms, MECH, Fuel_name, Oxi_name, Fue
                 flame.set_interrupt(interrupt_extinction)
                 
                 # flame.solve(loglevel=0, auto=True)
-                
+                step_initial    = 0.05      # incrément alpha très petit au départ (vs 1.0 avant)
+                step_min        = 0.005     # pas minimum avant d'arrêter
+                step_max        = 0.5       # pas maximum autorisé
+                success_streak  = 0         # compteur de succès consécutifs
+                step = step_initial
                 n = 0
                 n_last_burning = 0
                 # Do the strain rate loop
