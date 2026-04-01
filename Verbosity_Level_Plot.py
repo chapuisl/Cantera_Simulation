@@ -427,65 +427,65 @@ def Verbosity_Counter_flow(level_verbosity, gas, flame):
 def Verbosity_Counter_flow_quenching(level_verbosity, flame, n, strain_factor,Coef_Scaling_flame,alpha, Fuel_inlet_mdot,oxidizer_inlet_mdot):
     
     # -------------------------------
-        # Verbosity LEVEL 0
-        # -------------------------------
-        strain_maxi = np.max(np.abs(np.gradient(flame.velocity) / np.gradient(flame.grid)))
-        if level_verbosity == 1 and n % 30 == 0:
-            print("\t \t --------------------------------------------------")
-            print(f"\t \t Verbosity LEVEL: {level_verbosity}")
-            print("\t \t --------------------------------------------------")
-            print("\t \t --------------------------------------------------")
-            print(f"\t \t Strain Iteration       : {n}")
-            print(f"\t \t Strain maxi            : { strain_maxi:.4f}")
-            print(f"\t \t Current Tmax           : {np.max(flame.T):.6f} K")
-            print(f"\t \t Strain factor          : {strain_factor:.6f}")
-            print("\t \t --------------------------------------------------")
+    # Verbosity LEVEL 0
+    # -------------------------------
+    strain_maxi = np.max(np.abs(np.gradient(flame.velocity) / np.gradient(flame.grid)))
+    if level_verbosity == 1 and n % 30 == 0:
+        print("\t \t --------------------------------------------------")
+        print(f"\t \t Verbosity LEVEL: {level_verbosity}")
+        print("\t \t --------------------------------------------------")
+        print("\t \t --------------------------------------------------")
+        print(f"\t \t Strain Iteration       : {n}")
+        print(f"\t \t Strain maxi            : { strain_maxi:.4f}")
+        print(f"\t \t Current Tmax           : {np.max(flame.T):.6f} K")
+        print(f"\t \t Strain factor          : {strain_factor:.6f}")
+        print("\t \t --------------------------------------------------")
 
-        # -------------------------------
-        # Verbosity LEVEL 1
-        # -------------------------------
-        elif level_verbosity == 2 and n % 10 == 0:
-            exp_d_a, exp_u_a, exp_V_a, exp_lam_a, exp_mdot_a = Coef_Scaling_flame
-            print("\t \t --------------------------------------------------")
-            print(f"\t \t Verbosity LEVEL: {level_verbosity}")
-            print("\t \t --------------------------------------------------")
-            print("\t \t --------------------------------------------------")
-            print(f"\t \t Strain Iteration           : {n}")
-            print(f"\t \t Strain maxi                : { strain_maxi:.4f}")
-            print(f"\t \t Strain factor              : {strain_factor:.6f}")
-            print(f"\t \t Current Tmax               : {np.max(flame.T):.6f} K")
-            print(f"\t \t Alpha(n)                   : {alpha[-1]:.6f}")
-            print(f"\t \t Grid scaling factor        : {strain_factor ** exp_d_a:.6e}")
-            print(f"\t \t mdot scaling factor        : {strain_factor ** exp_mdot_a:.6e}")
-            print(f"\t \t Velocity scaling factor    : {strain_factor ** exp_u_a:.6e}")
-            print(f"\t \t Spread scaling factor      : {strain_factor ** exp_V_a:.6e}")
-            print(f"\t \t Lambda scaling factor      : {strain_factor ** exp_lam_a:.6e}")
-            print("\t \t --------------------------------------------------")
+    # -------------------------------
+    # Verbosity LEVEL 1
+    # -------------------------------
+    elif level_verbosity == 2 and n % 10 == 0:
+        exp_d_a, exp_u_a, exp_V_a, exp_lam_a, exp_mdot_a = Coef_Scaling_flame
+        print("\t \t --------------------------------------------------")
+        print(f"\t \t Verbosity LEVEL: {level_verbosity}")
+        print("\t \t --------------------------------------------------")
+        print("\t \t --------------------------------------------------")
+        print(f"\t \t Strain Iteration           : {n}")
+        print(f"\t \t Strain maxi                : { strain_maxi:.4f}")
+        print(f"\t \t Strain factor              : {strain_factor:.6f}")
+        print(f"\t \t Current Tmax               : {np.max(flame.T):.6f} K")
+        print(f"\t \t Alpha(n)                   : {alpha[-1]:.6f}")
+        print(f"\t \t Grid scaling factor        : {strain_factor ** exp_d_a:.6e}")
+        print(f"\t \t mdot scaling factor        : {strain_factor ** exp_mdot_a:.6e}")
+        print(f"\t \t Velocity scaling factor    : {strain_factor ** exp_u_a:.6e}")
+        print(f"\t \t Spread scaling factor      : {strain_factor ** exp_V_a:.6e}")
+        print(f"\t \t Lambda scaling factor      : {strain_factor ** exp_lam_a:.6e}")
+        print("\t \t --------------------------------------------------")
 
-        # -------------------------------
-        # Verbosity LEVEL 2
-        # -------------------------------
-        elif level_verbosity == 3 and n % 2 == 0:
-            exp_d_a, exp_u_a, exp_V_a, exp_lam_a, exp_mdot_a = Coef_Scaling_flame
-            print("\t \t --------------------------------------------------")
-            print(f"\t \t Verbosity LEVEL: {level_verbosity}")
-            print("\t \t --------------------------------------------------")
-            print("\t \t --------------------------------------------------")
-            print(f"\t \t Strain Iteration           : {n}")
-            print(f"\t \t Strain maxi                : { strain_maxi:.4f}") 
-            print(f"\t \t Strain factor              : {strain_factor:.6f}")
-            print(f"\t \t Current Tmax               : {np.max(flame.T):.6f} K")
-            print(f"\t \t Alpha(n)                   : {alpha[-1]:.6f}")
-            print(f"\t \t Grid scaling factor        : {strain_factor ** exp_d_a:.6e}")
-            print(f"\t \t mdot scaling factor        : {strain_factor ** exp_mdot_a:.6e}")
-            print(f"\t \t Velocity scaling factor    : {strain_factor ** exp_u_a:.6e}")
-            print(f"\t \t Spread scaling factor      : {strain_factor ** exp_V_a:.6e}")
-            print(f"\t \t Lambda scaling factor      : {strain_factor ** exp_lam_a:.6e}")
-            print("\t \t --------------------------------------------------")
-            print("\t \t  New flow injection:")
-            print(f"\t \t Fuel Injection             : {Fuel_inlet_mdot:.2e}")
-            print(f"\t \t Oxidizer Injection         : {oxidizer_inlet_mdot:.2e}")
-            print("\t \t --------------------------------------------------")
+    # -------------------------------
+    # Verbosity LEVEL 2
+    # -------------------------------
+    elif level_verbosity == 3 and n % 2 == 0:
+        exp_d_a, exp_u_a, exp_V_a, exp_lam_a, exp_mdot_a = Coef_Scaling_flame
+        print("\t \t --------------------------------------------------")
+        print(f"\t \t Verbosity LEVEL: {level_verbosity}")
+        print("\t \t --------------------------------------------------")
+        print("\t \t --------------------------------------------------")
+        print(f"\t \t Strain Iteration           : {n}")
+        print(f"\t \t Strain maxi                : { strain_maxi:.4f}") 
+        print(f"\t \t Strain factor              : {strain_factor:.6f}")
+        print(f"\t \t Current Tmax               : {np.max(flame.T):.6f} K")
+        print(f"\t \t Alpha(n)                   : {alpha[-1]:.6f}")
+        print(f"\t \t Grid scaling factor        : {strain_factor ** exp_d_a:.6e}")
+        print(f"\t \t mdot scaling factor        : {strain_factor ** exp_mdot_a:.6e}")
+        print(f"\t \t Velocity scaling factor    : {strain_factor ** exp_u_a:.6e}")
+        print(f"\t \t Spread scaling factor      : {strain_factor ** exp_V_a:.6e}")
+        print(f"\t \t Lambda scaling factor      : {strain_factor ** exp_lam_a:.6e}")
+        print("\t \t --------------------------------------------------")
+        print("\t \t  New flow injection:")
+        print(f"\t \t Fuel Injection             : {Fuel_inlet_mdot:.2e}")
+        print(f"\t \t Oxidizer Injection         : {oxidizer_inlet_mdot:.2e}")
+        print("\t \t --------------------------------------------------")
    
     
     

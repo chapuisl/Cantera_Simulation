@@ -774,7 +774,7 @@ def PreProcess_Counter_flow_quenching(mechanisms, MECH, Fuel_name, Oxi_name, Fue
                 
                 # flame.solve(loglevel=0, auto=True)
                 step_initial    = 0.05      # incrément alpha très petit au départ (vs 1.0 avant)
-                step_min        = 0.005     # pas minimum avant d'arrêter
+                step_min        = 0.002     # pas minimum avant d'arrêter
                 step_max        = 0.5       # pas maximum autorisé
                 success_streak  = 0         # compteur de succès consécutifs
                 step = step_initial
@@ -790,33 +790,28 @@ def PreProcess_Counter_flow_quenching(mechanisms, MECH, Fuel_name, Oxi_name, Fue
                 InletOxid_Velocity = []
                 Max_dTdx           = []
                 alpha = [1.0]
-                while np.max(flame.T) > temperature_limit_extinction:
+                while np.max(flame.T) > temperature_limit_extinction and step > step_min:
                     n += 1
-                    alpha.append(alpha[n_last_burning] + 1.0)
+                    alpha.append(alpha[n_last_burning] + step)           # <-- pas adaptatif
                     strain_factor = alpha[-1] / alpha[n_last_burning]
-                    n_last_burning = n
-                
-                    # Create an initial guess based on the previous solution
-                    # Update grid
+
+                    # Scaling de la flamme (identique à ton code)
                     flame.flame.grid *= strain_factor ** exp_d_a
-                    # Update mass fluxes
-                    flame.fuel_inlet.mdot *= strain_factor ** exp_mdot_a
+                    flame.fuel_inlet.mdot  *= strain_factor ** exp_mdot_a
                     flame.oxidizer_inlet.mdot *= strain_factor ** exp_mdot_a
-                    
-                    # Update velocities
-                    flame.flame.set_values("velocity", flame.flame.velocity * strain_factor ** exp_u_a)
-                    flame.flame.set_values("spreadRate", flame.flame.spread_rate * strain_factor ** exp_V_a)
-                    # Update pressure curvature
-                    flame.flame.set_values(
-                        "Lambda", flame.flame.radial_pressure_gradient * strain_factor ** exp_lam_a)
+                    flame.flame.set_values("velocity",   flame.flame.velocity     * strain_factor ** exp_u_a)
+                    flame.flame.set_values("spreadRate", flame.flame.spread_rate  * strain_factor ** exp_V_a)
+                    flame.flame.set_values("Lambda",     flame.flame.radial_pressure_gradient * strain_factor ** exp_lam_a)
+
                     try:
-                        # Try solving the flame
                         flame.solve(loglevel=0)
                         
-                        #print information
+                        # ---- Succès ----
+                        success_streak += 1
+                        n_last_burning = n
                         Verbosity_Counter_flow_quenching(Verbosity_level, flame, n, strain_factor,Coef_Scaling_flame,alpha,flame.fuel_inlet.mdot,flame.oxidizer_inlet.mdot)
                     
-                        # Save information
+                        # Enregistrement (identique)
                         strain_maxi = np.max(np.abs(np.gradient(flame.velocity) / np.gradient(flame.grid)))
                         a_maxi.append(strain_maxi)
                         T_max.append(np.max(flame.T))
@@ -826,13 +821,38 @@ def PreProcess_Counter_flow_quenching(mechanisms, MECH, Fuel_name, Oxi_name, Fue
                         InletFuel_Velocity.append(flame.velocity[0])
                         InletOxid_Velocity.append(flame.velocity[-1])
                         Max_dTdx.append(np.max(np.gradient(flame.T, flame.grid)))
-                        
+
+                        # Accélérer prudemment après 3 succès d'affilée
+                        if success_streak >= 3:
+                            step = min(step * 1.5, step_max)
+                            success_streak = 0
+                            print(f'\t [step UP] alpha={alpha[-1]:.3f}  step={step:.4f}')
+
                     except FlameExtinguished:
-                        print('\t -- Flame extinguished')
-                        break
+                        print(f'\t -- Extinction at alpha={alpha[-1]:.3f}, step={step:.4f} --> bisection')
+                        
+                        # Revenir à la dernière solution valide
+                        alpha.pop()
+                        n -= 1
+
+                        # Réduire le pas (bisection)
+                        step /= 2.0
+                        success_streak = 0
+
+                        if step < step_min:
+                            print(f'\t -- Step to small ({step:.5f}), STOP : quenching find')
+                            break
+
+                        # Recharger la solution valide (IMPORTANT)
+                        # Si tu sauvegardes les états, recharge ici ;
+                        # sinon Cantera garde l'état avant le solve raté → c'est ok
+                        print(f'\t    New trial with step={step:.4f}')
+                        continue
+
                     except ct.CanteraError as e:
-                        print('Error occurred while solving:', e)
+                        print('ERROR Cantera:', e)
                         break
+                
                     
                 headers = [
                     "Max strain [1/s]",

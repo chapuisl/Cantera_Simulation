@@ -292,8 +292,8 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
 
                 #TODO cgeheck the limit
                 x_flame = Grid[i_max]
-                x_left  = x_flame - 7 * flame_thickness
-                x_right = x_flame + 7 * flame_thickness
+                x_left  = x_flame - 4 * flame_thickness
+                x_right = x_flame + 4 * flame_thickness
 
                 x_left  =  math.floor(x_left * 100) / 100
                 x_right =  math.ceil(x_right * 100) / 100
@@ -305,6 +305,7 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                     xlabel=r"$d / d_{max}$",
                     x_limit_left= x_left, 
                     x_limit_right= x_right,
+                    y_limit_bot=0,
                     secondary_data=HRR_list, 
                     secondary_ylabel="HRR [GW/m$^3$] $-$$-$ ",        
                     save_fig=Save_plot,
@@ -319,7 +320,8 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                     ylabel="HRR [GW/m$^3$] $-$$-$",
                     xlabel=r"$d / d_{max}$",
                     x_limit_left= x_left, 
-                    x_limit_right= x_right,     
+                    x_limit_right= x_right,   
+                    y_limit_bot=0,  
                     save_fig=Save_plot,
                     save_path=P_eq_path,
                     name_fig=f"HRR_MixtureFraction_flame1D_evolution_for_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_T{T:.2f}_and_P_{P:.2f}bars",
@@ -332,6 +334,7 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                     xlabel=r"$d / d_{max}$",
                     x_limit_left= x_left, 
                     x_limit_right= x_right,
+                    y_limit_bot=0,
                     secondary_data=Rho_flame_list, 
                     secondary_ylabel=r"$\rho$ [kg/m$^3$] $-$$-$",
                     save_fig=Save_plot,
@@ -346,6 +349,7 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                     xlabel=r"$d / d_{max}$",
                     x_limit_left= x_left, 
                     x_limit_right= x_right,
+                    y_limit_bot=0,
                     save_fig=Save_plot,
                     save_path=P_eq_path,
                     name_fig=f"Axial_velocity_flame1D_evolution_for_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_T{T:.2f}_and_P_{P:.2f}bars",

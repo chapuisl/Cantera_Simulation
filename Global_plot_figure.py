@@ -97,272 +97,231 @@ import Graphic_Configuration as GC
 #  Import library
 # ===================================================================================================================
 """
-from matplotlib.ticker import (
-    LogLocator, LogFormatterSciNotation, NullFormatter,
-    FormatStrFormatter,FuncFormatter
-)
+from matplotlib.ticker import LogLocator, LogFormatterSciNotation, NullFormatter, FuncFormatter
 from matplotlib.legend_handler import HandlerTuple
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+
 """
 # ===================================================================================================================
 #  Function
 # ===================================================================================================================
 """
-    
-def _set_uniform_ticks(ax, axis='x', n=5, scale='linear', fmt=None):
-    if scale == 'log':
-        return
 
-    def sci_formatter(x, _):
-        if x == 0:
-            return '0'
-        exp = int(np.floor(np.log10(abs(x))))
-        coef = x / 10**exp
-        superscripts = str.maketrans('0123456789-', '⁰¹²³⁴⁵⁶⁷⁸⁹⁻')
-        exp_str = str(exp).translate(superscripts)
-        return f'{coef:.2f}×10{exp_str}'
+def _to_list(x):
+    """Wrap a single array/list into a list-of-lists."""
+    if isinstance(x, (list, tuple)) and len(x) > 0 and isinstance(x[0], (list, tuple, np.ndarray)):
+        return x
+    return [x]
 
-    def auto_fmt(vmin, vmax, n):
-        """Calcule automatiquement le nombre de décimales nécessaires."""
-        if vmax == vmin:
-            return '%.3f'
-        step = (vmax - vmin) / (n - 1)
-        if step == 0:
-            return '%.3f'
-        decimals = max(3, -int(np.floor(np.log10(abs(step)))) + 1)
-        return f'%.{decimals}f'
 
-    if axis == 'x':
-        vmin, vmax = ax.get_xlim()
-        ticks = np.linspace(vmin, vmax, n)
-        ax.set_xticks(ticks)
-        if abs(vmax) > 100 or (vmin != 0 and abs(vmin) < 0.1):
-            ax.xaxis.set_major_formatter(FuncFormatter(sci_formatter))
+def _nice_ticks(vmin, vmax, n_target=5):
+    """
+    Retourne (ticks, new_vmin, new_vmax) avec des valeurs "rondes".
+
+    Stratégie : on cherche le pas "propre" (1/2/2.5/5 × 10^k) qui génère
+    entre n_target-2 et n_target+2 ticks en débordant le moins possible
+    au-delà des bornes réelles.
+
+    Exemple : données [1, 30] → step=5 → ticks [0,5,10,15,20,25,30] ✓
+              données [0.5, 1.7] → step=0.25 → ticks [0.5,0.75,1,1.25,1.5,1.75] ✓
+    """
+    span = vmax - vmin
+    if span == 0:
+        return np.array([vmin]), vmin, vmax
+
+    best = None
+    best_score = np.inf
+
+    # On teste des pas "propres" autour de l'ordre de grandeur du span
+    mag = 10 ** np.floor(np.log10(span))
+    for exp_offset in [-1, 0, 1]:          # ordres de grandeur voisins
+        m = mag * (10 ** exp_offset)
+        for factor in [1, 2, 2.5, 5]:
+            step = factor * m
+            new_vmin = np.floor(vmin / step) * step
+            new_vmax = np.ceil(vmax / step) * step
+            ticks = np.arange(new_vmin, new_vmax + step * 0.5, step)
+            n = len(ticks)
+
+            # Pénalité : écart au nombre cible + débordement relatif
+            overshoot = ((new_vmax - vmax) + (vmin - new_vmin)) / span
+            score = abs(n - n_target) * 2 + overshoot
+            if score < best_score:
+                best_score = score
+                best = (ticks, new_vmin, new_vmax)
+
+    return best
+
+
+def _set_axis_ticks(ax, scale_x, scale_y, xmin, xmax, ymin, ymax):
+    """
+    Calcule les ticks propres depuis les bornes RÉELLES des données
+    (pas depuis get_xlim qui inclut les marges matplotlib) puis applique
+    set_xlim / set_ylim avec les nouvelles bornes arrondies.
+    """
+    for axis, scale, vmin, vmax in [('x', scale_x, xmin, xmax),
+                                     ('y', scale_y, ymin, ymax)]:
+        if scale == 'log':
+            continue
+        setter    = ax.set_xlim   if axis == 'x' else ax.set_ylim
+        set_ticks = ax.set_xticks if axis == 'x' else ax.set_yticks
+        fmt_axis  = ax.xaxis      if axis == 'x' else ax.yaxis
+
+        ticks, new_min, new_max = _nice_ticks(vmin, vmax, n_target=5)
+        setter(new_min, new_max)
+        set_ticks(ticks)
+
+        # Formateur : scientifique si grands/petits nombres
+        if abs(new_max) > 1e4 or (new_max != 0 and new_min != 0 and abs(new_min / new_max) < 1e-2):
+            fmt_axis.set_major_formatter(FuncFormatter(
+                lambda x, _: f'{x:.2e}' if x != 0 else '0'
+            ))
         else:
-            ax.xaxis.set_major_formatter(FormatStrFormatter(fmt or auto_fmt(vmin, vmax, n)))
+            step = ticks[1] - ticks[0] if len(ticks) > 1 else 1
+            dec = max(0, -int(np.floor(np.log10(abs(step)))) if step != 0 else 0)
+            fmt_axis.set_major_formatter(FuncFormatter(
+                lambda x, _, d=dec: f'{x:.{d}f}'
+            ))
 
-    elif axis == 'y':
-        vmin, vmax = ax.get_ylim()
-        ticks = np.linspace(vmin, vmax, n)
-        ax.set_yticks(ticks)
-        if abs(vmax) > 100 or (vmin != 0 and abs(vmin) < 0.1):
-            ax.yaxis.set_major_formatter(FuncFormatter(sci_formatter))
-        else:
-            ax.yaxis.set_major_formatter(FormatStrFormatter(fmt or auto_fmt(vmin, vmax, n)))
 
-def plot_evolution(t, data, labels=None, colors=None, styles=None, xlabel=None, ylabel=None, figsize=None,
-                   title="", legend_loc="best", grid=True, marker=None,
-                   x_limit_left=0.0, x_limit_right=None, y_limit_bot=0.0, y_limit_top=None,
-                   type_x_scale='linear', type_y_scale='linear',
-                   line_value=None, line_orientation='H',
-                   secondary_data=None, secondary_label=None,
-                   secondary_color=None, secondary_ylabel=None, subplot_titles=None,
-                   plot_fig=False, save_fig=False, save_path=None, name_fig=None):
+def _set_log_axis(ax, axis):
+    """Configure un axe en log avec labels sur les ticks mineurs."""
+    a = ax.xaxis if axis == 'x' else ax.yaxis
+    a.set_major_locator(LogLocator(base=10, numticks=10))
+    a.set_major_formatter(LogFormatterSciNotation(base=10))
+    a.set_minor_locator(LogLocator(base=10, subs='auto', numticks=10))
+    a.set_minor_formatter(LogFormatterSciNotation(base=10, minor_thresholds=(2, 0.5)))
 
-    # --- Cas simple : un seul graphique ---
+    # Ticks mineurs : penchés + plus petits
+    tick_axis = 'x' if axis == 'x' else 'y'
+    ax.tick_params(axis=tick_axis, which='minor', labelsize=14, rotation=45)
+
+def _add_ref_lines(ax, line_value, line_orientation, type_x_scale, type_y_scale):
+    """Trace les lignes de référence H/V avec annotation."""
+    x_min, x_max = ax.get_xlim()
+    y_min, y_max = ax.get_ylim()
+    x_range, y_range = x_max - x_min, y_max - y_min
+
+    offset_h = offset_v = 0
+    for val, ori in zip(line_value, line_orientation):
+        if ori == 'H':
+            ax.axhline(y=val, color='red', linestyle='--', linewidth=2)
+            x_text = x_max + 0.2 * x_range
+            y_text = val + offset_h * 0.1 * y_range
+            ax.annotate(f'{val:.2e}', xy=(x_max, val), xytext=(x_text, y_text),
+                        color='red', va='center', ha='left',
+                        arrowprops=dict(arrowstyle='-', color='red', lw=0.8),
+                        bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3'))
+            offset_h += 1
+        elif ori == 'V':
+            ax.axvline(x=val, color='b', linestyle='--', linewidth=2)
+            x_text = val + offset_v * 0.1 * x_range
+            y_text = y_max + 0.2 * y_range
+            ax.annotate(f'{val:.2e}', xy=(val, y_max), xytext=(x_text, y_text),
+                        color='b', va='bottom', ha='right', rotation=90,
+                        arrowprops=dict(arrowstyle='-', color='b', lw=0.8),
+                        bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3'))
+            offset_v += 1
+
+
+# ───────────────────────────────────────────────────────────────
+#  Fonction principale
+# ───────────────────────────────────────────────────────────────
+
+def plot_evolution(
+    t, data,
+    labels=None, colors=None, styles=None,
+    xlabel=None, ylabel=None, figsize=None, title="", legend_loc="best",
+    x_limit_left=None, x_limit_right=None, y_limit_bot=None, y_limit_top=None,
+    type_x_scale='linear', type_y_scale='linear',
+    line_value=None, line_orientation=None,
+    secondary_data=None, secondary_label=None, secondary_color=None, secondary_ylabel=None,
+    marker=None, plot_fig=False, save_fig=False, save_path=None, name_fig=None,
+):
     fig, ax1 = plt.subplots(figsize=figsize)
-
-    # --- Axe X : log seulement, le linéaire sera fait APRÈS set_xlim ---
-    if type_x_scale == 'log':
-        ax1.xaxis.set_major_locator(LogLocator(base=10, numticks=6))
-        ax1.xaxis.set_major_formatter(LogFormatterSciNotation(base=10))
-        ax1.xaxis.set_minor_formatter(NullFormatter())
-
-    # --- Axe Y : log seulement, le linéaire sera fait APRÈS set_ylim ---
-    if type_y_scale == 'log':
-        ax1.yaxis.set_major_locator(LogLocator(base=10, numticks=6))
-        ax1.yaxis.set_major_formatter(LogFormatterSciNotation(base=10))
-        ax1.yaxis.set_minor_formatter(NullFormatter())
-
     ax1.grid(True, which="both")
-    ax1.set_yscale(type_y_scale)
     ax1.set_xscale(type_x_scale)
+    ax1.set_yscale(type_y_scale)
 
-    # --- Normalisation des données ---
-    if isinstance(data, (list, tuple)) and len(data) > 0 and isinstance(data[0], (list, tuple)):
-        data_list = data
-    else:
-        data_list = [data]
+    if type_x_scale == 'log':
+        _set_log_axis(ax1, 'x')
+    if type_y_scale == 'log':
+        _set_log_axis(ax1, 'y')
 
-    n_curves = len(data_list)
+    # ── Tracé des courbes principales ──
+    data_list = _to_list(data)
+    t_list = _to_list(t)
+    if len(t_list) == 1:
+        t_list = t_list * len(data_list)
 
-    if isinstance(t, (list, tuple)) and len(t) > 0 and isinstance(t[0], (list, tuple)):
-        t_list = t
-    else:
-        t_list = [t] * n_curves
+    for i, (ti, di) in enumerate(zip(t_list, data_list)):
+        ax1.plot(ti, di,
+                 color=colors[i] if colors and i < len(colors) else '0.5',
+                 linestyle=styles[i] if styles and i < len(styles) else '-',
+                 label=labels[i] if labels and i < len(labels) else None,
+                 marker=marker)
 
-    for i in range(n_curves):
-        ax1.plot(
-            t_list[i],
-            data_list[i],
-            color=(colors[i] if colors and i < len(colors) else '0.5'),
-            linestyle=(styles[i] if styles and i < len(styles) else "-"),
-            label=(labels[i] if labels and i < len(labels) else None),
-            marker=marker
-        )
-    fig.autofmt_xdate(rotation=45, ha='center')
-    # --- Ligne pointillée si line_value est spécifié ---
-    if line_value is not None and len(line_value) == len(line_orientation):
+    # ── Bornes réelles des données (bypass des marges matplotlib) ──
+    all_x = np.concatenate([np.asarray(ti).ravel() for ti in t_list])
+    all_y = np.concatenate([np.asarray(di).ravel() for di in data_list])
+    raw_xmin = x_limit_left  if x_limit_left  is not None else float(np.nanmin(all_x))
+    raw_xmax = x_limit_right if x_limit_right is not None else float(np.nanmax(all_x))
+    raw_ymin = y_limit_bot   if y_limit_bot   is not None else float(np.nanmin(all_y))
+    raw_ymax = y_limit_top   if y_limit_top   is not None else float(np.nanmax(all_y))
 
-        offset_h = 0
-        offset_v = 0
+    # ── Ticks propres calculés sur les vraies bornes, applique aussi set_xlim/ylim ──
+    _set_axis_ticks(ax1, type_x_scale, type_y_scale, raw_xmin, raw_xmax, raw_ymin, raw_ymax)
 
-        y_min, y_max = ax1.get_ylim()
-        x_min, x_max = ax1.get_xlim()
-
-        if y_limit_top is not None:
-            y_max = max(y_max, y_limit_top)
-        if x_limit_right is not None:
-            x_max = max(x_max, x_limit_right)
-        y_min = max(y_min, y_limit_bot)
-        x_min = max(x_min, x_limit_left)
-
-        y_range = y_max - y_min
-        x_range = x_max - x_min
-
-        for i in range(len(line_value)):
-
-            if line_orientation[i] == 'H':
-                ax1.axhline(y=line_value[i], color='red', linestyle='--', linewidth=2)
-
-                if type_y_scale == 'log':
-                    y_text = y_max / (10 ** (0.1 * offset_h))
-                    x_text = x_max + 0.2 * x_range
-                else:
-                    x_text = x_max + 0.2 * x_range
-                    y_text = line_value[i] + offset_h * 0.1 * y_range
-
-                ax1.annotate(f'{line_value[i]:.2e}',
-                             xy=(x_max, line_value[i]), xytext=(x_text, y_text),
-                             color='red', va='center', ha='left',
-                             arrowprops=dict(arrowstyle='-', color='red', lw=0.8),
-                             bbox=dict(facecolor='white', edgecolor='black',
-                                       boxstyle='round,pad=0.3', linewidth=1))
-                offset_h += 1
-
-            elif line_orientation[i] == 'V':
-                ax1.axvline(x=line_value[i], color='b', linestyle='--', linewidth=2)
-
-                if type_x_scale == 'log':
-                    x_text = x_max / (10 ** (0.1 * offset_v))
-                    y_text = y_max + 0.2 * y_range
-                else:
-                    x_text = line_value[i] + offset_v * 0.1 * x_range
-                    y_text = y_max + 0.2 * y_range
-
-                ax1.annotate(f'{line_value[i]:.2e}',
-                             xy=(line_value[i], y_max), xytext=(x_text, y_text),
-                             color='b', va='bottom', ha='right', rotation=90,
-                             arrowprops=dict(arrowstyle='-', color='b', lw=0.8),
-                             bbox=dict(facecolor='white', edgecolor='black',
-                                       boxstyle='round,pad=0.3', linewidth=1))
-                offset_v += 1
-
-        # Agrandit légèrement les limites pour voir le texte
-        x_limit_right = x_max + 0.15 * x_range
-        y_limit_top   = y_max + 0.15 * y_range
-        x_limit_left  = x_min
-        y_limit_bot   = y_min
-
-    # --- Appliquer les limites ---
     ax1.set_xlabel(xlabel)
     ax1.set_ylabel(ylabel)
-    ax1.set_xlim(x_limit_left, x_limit_right)
-    ax1.set_ylim(y_limit_bot, y_limit_top)
     ax1.set_title(title)
-    plt.setp(ax1.get_xticklabels(which='both'), rotation=45, ha='right')    
-    # --- Ticks uniformes avec bords inclus (APRÈS set_xlim / set_ylim) ---
-    _set_uniform_ticks(ax1, axis='x', n=5, scale=type_x_scale)
-    _set_uniform_ticks(ax1, axis='y', n=6, scale=type_y_scale)
+    plt.setp(ax1.get_xticklabels(), rotation=45, ha='right')
 
-    # --- Axe secondaire optionnel ---
+    # ── Lignes de référence ──
+    if line_value is not None and line_orientation is not None:
+        _add_ref_lines(ax1, line_value, line_orientation, type_x_scale, type_y_scale)
+
+    # ── Axe secondaire ──
     if secondary_data is not None:
-
         ax2 = ax1.twinx()
+        sec_list = _to_list(secondary_data)
+        sec_colors = (secondary_color if isinstance(secondary_color, (list, tuple))
+                      else [secondary_color or 'darkred'] * len(sec_list))
+        sec_labels = secondary_label or labels
+        t_sec = t_list if len(t_list) == len(sec_list) else [t_list[0]] * len(sec_list)
 
-        # Normalisation secondary_data
-        if isinstance(secondary_data, (list, tuple)) and len(secondary_data) > 0 and isinstance(secondary_data[0], (list, tuple)):
-            secondary_data_list = secondary_data
-        else:
-            secondary_data_list = [secondary_data]
+        for i, (ti, di) in enumerate(zip(t_sec, sec_list)):
+            ax2.plot(ti, di,
+                     color=sec_colors[i] if i < len(sec_colors) else 'darkred',
+                     linestyle='--',
+                     label=sec_labels[i] if sec_labels and i < len(sec_labels) else None,
+                     marker=marker)
 
-        n_sec_curves = len(secondary_data_list)
+        ax2.set_ylabel(secondary_ylabel or "", color='black')
+        ax2.tick_params(axis='y', labelcolor=sec_colors[0])
 
-        # Couleurs axe secondaire
-        if secondary_color is None:
-            # Fallback si GC n'est pas défini
-            try:
-                sec_color = GC.Red_Black()
-            except Exception:
-                sec_color = ['darkred'] * n_sec_curves
-        elif isinstance(secondary_color, (list, tuple)):
-            sec_color = secondary_color
-        else:
-            sec_color = [secondary_color] * n_sec_curves
-
-        # Normalisation t pour axe secondaire
-        if isinstance(t, (list, tuple)) and len(t) > 0 and isinstance(t[0], (list, tuple)):
-            t_sec_list = t
-        else:
-            t_sec_list = [t] * n_sec_curves
-
-        if secondary_label is None:
-            secondary_label = labels
-
-        # Plot axe secondaire
-        for i in range(n_sec_curves):
-            ax2.plot(
-                t_sec_list[i],
-                secondary_data_list[i],
-                color=(sec_color[i] if sec_color and i < len(sec_color) else '0.5'),
-                linestyle='--',
-                label=(secondary_label[i] if secondary_label and i < len(secondary_label) else None),
-                marker=marker
-            )
-
-        # Style axe 2
-        ax2.set_ylabel(
-            secondary_ylabel if secondary_ylabel else "",
-            color='0.0'
-        )
-        ax2.tick_params(axis='y', labelcolor=sec_color[0])
-
-        # --- Ticks uniformes axe secondaire (APRÈS le plot, donc ylim est connu) ---
-        ax2_min, ax2_max = ax2.get_ylim()
-        ax2_ticks = np.linspace(ax2_min, ax2_max, 6)
-        ax2.set_yticks(ax2_ticks)
-        ax2.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+        all_sx = np.concatenate([np.asarray(ti).ravel() for ti in t_sec])
+        all_sy = np.concatenate([np.asarray(di).ravel() for di in sec_list])
+        _set_axis_ticks(ax2, 'linear', 'linear',
+                        float(np.nanmin(all_sx)), float(np.nanmax(all_sx)),
+                        float(np.nanmin(all_sy)), float(np.nanmax(all_sy)))
 
         # Légende combinée
-        # plt.setp(ax1.get_xticklabels(), rotation=45, ha='right')
-        lines_1, labels_1 = ax1.get_legend_handles_labels()
-        lines_2, labels_2 = ax2.get_legend_handles_labels()
-
-        handles = []
-        legend_labels = []
-
-        for l1, l2, lab in zip(lines_1, lines_2, labels_1):
-            handles.append((l1, l2))
-            legend_labels.append(lab)
-
-        ax1.legend(
-            handles,
-            legend_labels,
-            handler_map={tuple: HandlerTuple(ndivide=None)},
-            loc=legend_loc
-        )
-
+        h1, l1 = ax1.get_legend_handles_labels()
+        h2, _ = ax2.get_legend_handles_labels()
+        ax1.legend([(a, b) for a, b in zip(h1, h2)], l1,
+                   handler_map={tuple: HandlerTuple(ndivide=None)}, loc=legend_loc)
     else:
         if labels:
             ax1.legend(loc=legend_loc)
 
-    if save_fig and save_path is not None:
-        save_dir = os.path.join(save_path)
-        os.makedirs(save_dir, exist_ok=True)
-        save_name = name_fig.replace(" ", "_").replace("/", "_").replace("\\", "_")
-        plt.savefig(os.path.join(save_dir, f"{save_name}.png"), dpi=300)
+    # ── Sauvegarde ──
+    if save_fig and save_path:
+        os.makedirs(save_path, exist_ok=True)
+        fname = name_fig.replace(" ", "_").replace("/", "_").replace("\\", "_")
+        plt.savefig(os.path.join(save_path, f"{fname}.png"), dpi=300)
         plt.close()
 
     if plot_fig:

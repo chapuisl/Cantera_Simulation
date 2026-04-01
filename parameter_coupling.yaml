@@ -184,7 +184,6 @@
 # ===================================================================================================================
 
 
-
 # ===================================================================================================================
 #  Cantera simulation parameters
 # ===================================================================================================================
@@ -195,8 +194,8 @@
 
 output:
   directory: /Users/lilian_chapuis/Documents/04-PostProcessing_Result/00-Cantera_Simulation
-  # filename: 90-NH3_10-H2_AIR_Simulation1/
-  filename: TEst
+  filename: 100-NH3_00-H2_AIR_Simulation1/
+ #filename: TEst
   
 # ----------------------------------------------------------
 # Type of simulations
@@ -205,20 +204,20 @@ output:
 simulation:
   type:
     Flame_1D              : true
-    Temperature_Adiabatic : false
-    Ignition_Delay_time   : false
-    Gas_Composition       : false
-    Counter_flow          : false
+    Temperature_Adiabatic : true 
+    Ignition_Delay_time   : true
+    Gas_Composition       : true
+    Counter_flow          : true 
     
-
 
 # ----------------------------------------------------------
 # Kinetic Mechanism
 # ----------------------------------------------------------
 
 kinetics:
-  mechanism-1  : SANDIEGO  
-  mechanism-2  : h2o2  
+  mechanism-1  : ZHU24  
+  mechanism-2  : STAGNI25  
+  mechanism-3  : STAGNI20  
 
 
 # ----------------------------------------------------------
@@ -227,10 +226,11 @@ kinetics:
 
 mixture:
   fuel:
-    - species   : H2
+    - species   : NH3
       fraction  : 1.0
+    - species   : H2
+      fraction  : 0.0
     
-
   oxidizer:
     - species   : O2
       fraction  : 1.0
@@ -319,16 +319,16 @@ conditions:
   Flame_1D:
     Temperature:
       mode   : list
-      values : [300]
+      values : [300,500]
 
     Pressure:
       mode   : list
-      values  : [1.01325]
+      values  : [1.01325,2]
 
     Phi:
       mode   : linspace
-      start  : 0.5
-      end    : 4.0
+      start  : 0.8
+      end    : 1.5
       points : 25
 
   #------------------------
@@ -337,16 +337,16 @@ conditions:
     Temperature:
       mode   : linspace
       start  : 800
-      end    : 2500
+      end    : 1300
       points : 20
 
     Pressure:
       mode   : list
-      values : [1.01325]
+      values : [1.01325,2]
 
     Phi:
       mode   : linspace
-      start  : 0.4
+      start  : 0.8
       end    : 1.5
       points : 10
 
@@ -355,16 +355,16 @@ conditions:
   Temperature_Adiabatic:
     Temperature:
       mode   : list
-      values : [300]
+      values : [300,500]
 
     Pressure:
       mode   : list
-      values : [1.01325]
+      values : [1.01325,2]
 
     Phi:
       mode   : linspace
-      start  : 0.7
-      end    : 1.3
+      start  : 0.8
+      end    : 1.5
       points : 35
 
   #------------------------
@@ -372,16 +372,16 @@ conditions:
   Gas_Composition:
     Temperature:
       mode   : list
-      values : [300]
+      values : [300,500]
 
     Pressure:
       mode   : list
-      values : [1.01325]
+      values : [1.01325,2]
 
     Phi:
       mode   : linspace
-      start  : 0.7
-      end    : 1.3
+      start  : 0.8
+      end    : 1.5
       points : 10
 
   #------------------------
@@ -404,7 +404,7 @@ conditions:
 
 post_processing:
   save_plots      : true
-  verbosity_level : 1
+  verbosity_level : 3
 
 
 

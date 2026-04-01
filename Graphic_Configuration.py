@@ -263,13 +263,13 @@ def LineStyles():
     return [
         '-',                # Ligne pleine
         '-.',               # Tirets-point
-        ':',                # Pointillés
-        (0, (1, 1)),        # Très petits points
-        (0, (5, 1)),        # Tirets longs serrés
+        (0, (5, 2)),        # Tirets longs serrés
         (0, (3, 5, 1, 5)),  # Tiret-point espacé
         (0, (5, 10)),       # Tirets très espacés
         (0, (1, 10)),       # Points très espacés
         (0, (3, 1, 1, 1)),  # Tiret + petits points
+        ':',                # Pointillés
+        (0, (1, 1)),        # Très petits points
     ]
 
 
