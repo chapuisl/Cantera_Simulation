@@ -56,11 +56,11 @@ import numpy as np
 # ===================================================================================================================
 """
 
-def config_plot(style="default", figsize=(12, 8), title_size=40, label_size=40, tick_size=36, grid=True, background="#f9f9f9"):
+def config_plot(style="default", figsize=(12, 8),font_size =18, title_size=40, label_size=40, tick_size=36,figure_dpi=300, grid=True, background="#f9f9f9"):
     plt.style.use(style)
     mpl.rcParams.update({
         "figure.figsize": figsize,
-        "font.size": 18,
+        "font.size": font_size,
         "figure.facecolor": background,
         "axes.facecolor": "white",
         "axes.edgecolor": "#333333",
@@ -90,7 +90,7 @@ def config_plot(style="default", figsize=(12, 8), title_size=40, label_size=40, 
         "ytick.minor.width": 1.5,
         "xtick.minor.size": 5,  # Ajustez la taille des ticks mineurs ici
         "ytick.minor.size": 5, 
-        "figure.dpi": 500,
+        "figure.dpi": figure_dpi,
         "savefig.dpi": 300,
         "savefig.bbox": "tight"
     })
@@ -146,6 +146,14 @@ def Black_Blue():
             (0.0, 0.2, 0.9), 
             (0.0, 0.0, 0.8),
             (0.0, 0.0, 0.6), ]       # Bleu foncé
+
+def Black_Blue_short():
+    # Dégradé de 5 couleurs : noir → bleu
+    return [(0.0, 0.0, 0.0),                                               
+            (0.5, 0.5, 0.5), 
+            (0.1, 0.5, 1.0),
+            (0.0, 0.2, 0.9), 
+            (0.0, 0.0, 0.6), ]   
             
             
 

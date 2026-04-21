@@ -86,21 +86,26 @@ class FlameExtinguished(Exception):
 # @param gas            : Melange de gas
 #
 # @return  flame        : Toute les evolutions de la flamme 
-def solver_free_flame( gas, ratio_refine =3.0,width_values=0.05, slope_values=0.06, curve_values=0.1  ):
+def solver_free_flame( gas, ratio_refine =3.0,width_values=0.05, slope_values=0.06, curve_values=0.1, previous_flame=None  ):
     try:
         flame = ct.FreeFlame(gas, width=width_values)
         flame.set_refine_criteria(ratio=ratio_refine, slope=slope_values, curve=curve_values)
         flame.soret_enabled = True 
         flame.transport_model = 'multicomponent'
         # flame.flux_gradient_basis = "mass" # only relevant for mixture-averaged model
-        flame.solve(loglevel=0, auto=True) 
-        
-        # flame.show()
-        return flame
-    
+        if previous_flame is not None:
+            try:
+                flame.set_initial_guess(data=previous_flame.to_array())
+            except Exception:
+                pass  # Si le restore échoue, on repart de zéro
+
+        flame.solve(loglevel=0, auto=True)
+
+        return flame, True
+
     except ct.CanteraError as e:
         print(Fore.RED + f" WARNING: No solutioon find for this conditions: {e}")
-        return flame
+        return flame, False
     
 
 
@@ -141,7 +146,7 @@ def PreProcess_Flame1D(mechanisms,Fuel_name, Oxi_name, Fuel, Oxidizer, configura
                             "Flame Time [ms]",
                             "Damkohler [-]"
                         ])
-                
+                previous_flame = None 
                 # ---------- CALCUL ----------
                 for indexPhi, eq_ratio in enumerate(Equivalence_Ratio):
                     P_eq_path = create_folder(P_path, f"{indexPhi:02}-Equivalence_ratio_Phi-{eq_ratio:.2f}")
@@ -150,83 +155,89 @@ def PreProcess_Flame1D(mechanisms,Fuel_name, Oxi_name, Fuel, Oxidizer, configura
                     os.makedirs(os.path.dirname(Flame1D_csv), exist_ok=True)
                     
                     print(f"→ Flame1D: φ = {eq_ratio:.2f} | T={T} K | P={P} bar")
+
+                    headers = [
+                            "Grid [m]",
+                            "Temperature [K]",
+                            "Heat Release [W/m3]",
+                            "Axial Velocity [m/s]",
+                            "Density [kg/m3]",
+                            "cp [J/kg/K]",
+                            "Thermal Conductivity [W/m/K]",
+                            "Viscosity [Pa.s]",
+                            "dT/dx [K/m]",
+                        ]
                     gas = ct.Solution(mech_file)
 
                     gas.TP = T, P * 1e5
                     gas.set_equivalence_ratio(eq_ratio, Fuel, Oxidizer)
 
-                    flame = solver_free_flame(gas)
+                    flame, success = solver_free_flame(gas,previous_flame=previous_flame)
                     
-                    Verbosity_Flame1D(Verbosity_level, gas, flame)
-                         
-                    Sl = flame.velocity[0]
-                    no_rad = flame.to_array()
-                    
-                    Temp = flame.T
-                    x = flame.grid
-                    dTdx = np.gradient(Temp, x)
-                    thickness = (Temp.max() - Temp.min()) / np.max(np.abs(dTdx))
-                    thickness_mm = thickness * 1e3
-
-                    flame_time_ms = (thickness / Sl) * 1e3
-
-                    lambda_ = flame.thermal_conductivity[0]
-                    rho = flame.gas.density
-                    cp = flame.gas.cp_mass
-                    alpha = lambda_ / (rho * cp)
-                    tau_diff = thickness**2 / alpha
-                    tau_chem = thickness / Sl
-                    Da = tau_diff / tau_chem
-                    
-                    headers = [
-                        "Grid [m]",
-                        "Temperature [K]",
-                        "Heat Release [W/m3]",
-                        "Axial Velocity [m/s]",
-                        "Density [kg/m3]",
-                        "cp [J/kg/K]",
-                        "Thermal Conductivity [W/m/K]",
-                        "Viscosity [Pa.s]",
-                        "dT/dx [K/m]",
-                    ]
-                    species_mech = gas.species_names
-                    for spe in Major_species + Radicals :
-                        if spe in species_mech:
-                            if gas[spe].Y[0] != 0:
-                                headers.append(f"Y_{spe}")
-                                headers.append(f"X_{spe}")
-                        else: 
-                            print(Fore.RED + f" WARNING: Species {spe} not in the mechanism {mech_name}")
+                    if success is True:
+                        previous_flame = flame
+                        Verbosity_Flame1D(Verbosity_level, gas, flame)
                             
-                    
-                    with open(Flame1D_csv, mode='w', newline='') as file:
-                        writer = csv.writer(file, delimiter=';')
-                        writer.writerow(headers)
-                    
-                        n_points = len(flame.grid)
-                    
-                        for i in range(n_points):
-                            row = [
-                                flame.grid[i],
-                                flame.T[i],
-                                flame.heat_release_rate[i],
-                                flame.velocity[i],
-                                flame.density[i],
-                                flame.cp_mass[i],
-                                flame.thermal_conductivity[i],
-                                flame.viscosity[i],
-                                dTdx[i],
-                            ]
-                    
-                            for spe in Major_species + Radicals :
-                                if spe in species_mech:
-                                    if gas[spe].Y[0] != 0:
-                                        row.append(no_rad(spe).Y[i][0])
-                                        row.append(no_rad(spe).X[i][0])
-                                        
-                    
-                            writer.writerow(row)
+                        Sl = flame.velocity[0]
+                        no_rad = flame.to_array()
+                        
+                        Temp = flame.T
+                        x = flame.grid
+                        dTdx = np.gradient(Temp, x)
+                        thickness = (Temp.max() - Temp.min()) / np.max(np.abs(dTdx))
+                        thickness_mm = thickness * 1e3
 
+                        flame_time_ms = (thickness / Sl) * 1e3
+
+                        lambda_ = flame.thermal_conductivity[0]
+                        rho = flame.gas.density
+                        cp = flame.gas.cp_mass
+                        alpha = lambda_ / (rho * cp)
+                        tau_diff = thickness**2 / alpha
+                        tau_chem = thickness / Sl
+                        Da = tau_diff / tau_chem
+
+                        species_mech = gas.species_names
+                        for spe in Major_species + Radicals :
+                            if spe in species_mech:
+                                if gas[spe].Y[0] != 0:
+                                    headers.append(f"Y_{spe}")
+                                    headers.append(f"X_{spe}")
+                            else: 
+                                print(Fore.RED + f" WARNING: Species {spe} not in the mechanism {mech_name}")
+                                
+                        
+                        with open(Flame1D_csv, mode='w', newline='') as file:
+                            writer = csv.writer(file, delimiter=';')
+                            writer.writerow(headers)
+                        
+                            n_points = len(flame.grid)
+                        
+                            for i in range(n_points):
+                                row = [
+                                    flame.grid[i],
+                                    flame.T[i],
+                                    flame.heat_release_rate[i],
+                                    flame.velocity[i],
+                                    flame.density[i],
+                                    flame.cp_mass[i],
+                                    flame.thermal_conductivity[i],
+                                    flame.viscosity[i],
+                                    dTdx[i],
+                                ]
+                        
+                                for spe in Major_species + Radicals :
+                                    if spe in species_mech:
+                                        if gas[spe].Y[0] != 0:
+                                            row.append(no_rad(spe).Y[i][0])
+                                            row.append(no_rad(spe).X[i][0])
+                                            
+                        
+                                writer.writerow(row)
+                    else:
+                        Sl, thickness_mm, flame_time_ms, Da = np.nan,np.nan,np.nan,np.nan
+                        
+                       
                     # --------- WRITE CSV ----------
                     with open(Flame1D_prop_csv, "a", newline="") as f:
                         csv.writer(f).writerow([
@@ -775,7 +786,7 @@ def PreProcess_Counter_flow_quenching(mechanisms, MECH, Fuel_name, Oxi_name, Fue
                 # flame.solve(loglevel=0, auto=True)
                 step_initial    = 0.05      # incrément alpha très petit au départ (vs 1.0 avant)
                 step_min        = 0.002     # pas minimum avant d'arrêter
-                step_max        = 0.5       # pas maximum autorisé
+                step_max        = 0.7              # pas maximum autorisé
                 success_streak  = 0         # compteur de succès consécutifs
                 step = step_initial
                 n = 0

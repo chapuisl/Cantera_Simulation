@@ -120,7 +120,7 @@ def _nice_ticks(vmin, vmax, n_target=5):
     """
     Retourne (ticks, new_vmin, new_vmax) avec des valeurs "rondes".
 
-    Stratégie : on cherche le pas "propre" (1/2/2.5/5 × 10^k) qui génère
+    Stratégie : on cherche le pas "propre" (1/2/2.5/5  10^k) qui génère
     entre n_target-2 et n_target+2 ticks en débordant le moins possible
     au-delà des bornes réelles.
 
@@ -174,7 +174,7 @@ def _set_axis_ticks(ax, scale_x, scale_y, xmin, xmax, ymin, ymax):
         set_ticks(ticks)
 
         # Formateur : scientifique si grands/petits nombres
-        if abs(new_max) > 1e4 or (new_max != 0 and new_min != 0 and abs(new_min / new_max) < 1e-2):
+        if abs(new_max) > 1e4 or abs(new_max) < 1e-2 or (new_max != 0 and new_min != 0 and abs(new_min / new_max) < 1e-2):
             fmt_axis.set_major_formatter(FuncFormatter(
                 lambda x, _: f'{x:.2e}' if x != 0 else '0'
             ))
@@ -197,6 +197,7 @@ def _set_log_axis(ax, axis):
     # Ticks mineurs : penchés + plus petits
     tick_axis = 'x' if axis == 'x' else 'y'
     ax.tick_params(axis=tick_axis, which='minor', labelsize=14, rotation=45)
+
 
 def _add_ref_lines(ax, line_value, line_orientation, type_x_scale, type_y_scale):
     """Trace les lignes de référence H/V avec annotation."""
@@ -225,6 +226,36 @@ def _add_ref_lines(ax, line_value, line_orientation, type_x_scale, type_y_scale)
                         bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3'))
             offset_v += 1
 
+#permet de savoir si il faut tourner les valeurs des axes de 45 degre
+def _auto_rotate_xlabels(ax, fig, threshold=0.9):
+    fig.canvas.draw()  # nécessaire pour initialiser le renderer
+    renderer = fig.canvas.get_renderer()
+
+    formatter = ax.xaxis.get_major_formatter()
+    ticks = ax.get_xticks()
+
+    # Générer les strings comme Matplotlib va les afficher
+    tick_strings = [formatter(t, i) for i, t in enumerate(ticks)]
+    tick_strings = [s for s in tick_strings if s.strip()]
+    if not tick_strings:
+        return
+
+    # Mesurer la vraie largeur du label le plus long via le renderer
+    tmp_text = ax.text(0, 0, max(tick_strings, key=len),
+                       fontsize=plt.rcParams['xtick.labelsize'])
+    bbox = tmp_text.get_window_extent(renderer=renderer)
+    max_label_w_px = bbox.width
+    tmp_text.remove()  # nettoyer
+
+    # Largeur disponible par tick en pixels
+    n_labels = len(tick_strings)
+    axis_w_px = ax.get_window_extent(renderer=renderer).width
+    space_per_tick_px = axis_w_px / n_labels
+
+    angle = 45 if max_label_w_px > threshold * space_per_tick_px else 0
+    ha    = 'right' if angle == 45 else 'center'
+    ax.tick_params(axis='x', labelrotation=angle)
+    plt.setp(ax.get_xticklabels(), ha=ha)
 
 # ───────────────────────────────────────────────────────────────
 #  Fonction principale
@@ -238,18 +269,15 @@ def plot_evolution(
     type_x_scale='linear', type_y_scale='linear',
     line_value=None, line_orientation=None,
     secondary_data=None, secondary_label=None, secondary_color=None, secondary_ylabel=None,
-    marker=None, plot_fig=False, save_fig=False, save_path=None, name_fig=None,
-):
+    marker=None, plot_fig=False, save_fig=False, save_path=None, name_fig=None,):
+
+    secondary_color = GC.Purple_Black()
     fig, ax1 = plt.subplots(figsize=figsize)
     ax1.grid(True, which="both")
     ax1.set_xscale(type_x_scale)
     ax1.set_yscale(type_y_scale)
 
-    if type_x_scale == 'log':
-        _set_log_axis(ax1, 'x')
-    if type_y_scale == 'log':
-        _set_log_axis(ax1, 'y')
-
+   
     # ── Tracé des courbes principales ──
     data_list = _to_list(data)
     t_list = _to_list(t)
@@ -262,6 +290,11 @@ def plot_evolution(
                  linestyle=styles[i] if styles and i < len(styles) else '-',
                  label=labels[i] if labels and i < len(labels) else None,
                  marker=marker)
+        
+    if type_x_scale == 'log':
+        _set_log_axis(ax1, 'x')
+    if type_y_scale == 'log':
+        _set_log_axis(ax1, 'y')
 
     # ── Bornes réelles des données (bypass des marges matplotlib) ──
     all_x = np.concatenate([np.asarray(ti).ravel() for ti in t_list])
@@ -277,7 +310,8 @@ def plot_evolution(
     ax1.set_xlabel(xlabel)
     ax1.set_ylabel(ylabel)
     ax1.set_title(title)
-    plt.setp(ax1.get_xticklabels(), rotation=45, ha='right')
+    # plt.setp(ax1.get_xticklabels(), rotation=45, ha='right')
+    _auto_rotate_xlabels(ax1, fig)
 
     # ── Lignes de référence ──
     if line_value is not None and line_orientation is not None:
@@ -291,7 +325,6 @@ def plot_evolution(
                       else [secondary_color or 'darkred'] * len(sec_list))
         sec_labels = secondary_label or labels
         t_sec = t_list if len(t_list) == len(sec_list) else [t_list[0]] * len(sec_list)
-
         for i, (ti, di) in enumerate(zip(t_sec, sec_list)):
             ax2.plot(ti, di,
                      color=sec_colors[i] if i < len(sec_colors) else 'darkred',

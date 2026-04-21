@@ -194,8 +194,8 @@
 
 output:
   directory: /Users/lilian_chapuis/Documents/04-PostProcessing_Result/00-Cantera_Simulation
-  filename: 100-NH3_00-H2_AIR_Simulation1/
- #filename: TEst
+  #filename: 50-NH3_50-H2_AIR_Simulation1/
+  filename: Simple_diffusion_flame_NH3_AIR
   
 # ----------------------------------------------------------
 # Type of simulations
@@ -203,10 +203,10 @@ output:
 
 simulation:
   type:
-    Flame_1D              : true
-    Temperature_Adiabatic : true 
-    Ignition_Delay_time   : true
-    Gas_Composition       : true
+    Flame_1D              : false
+    Temperature_Adiabatic : false 
+    Ignition_Delay_time   : false
+    Gas_Composition       : false
     Counter_flow          : true 
     
 
@@ -216,8 +216,8 @@ simulation:
 
 kinetics:
   mechanism-1  : ZHU24  
-  mechanism-2  : STAGNI25  
-  mechanism-3  : STAGNI20  
+  #mechanism-2  : STAGNI25  
+  #mechanism-3  : STAGNI20  
 
 
 # ----------------------------------------------------------
@@ -290,8 +290,8 @@ outputs:
   #------------------------
 
   Counter_flow:
-    Extinction_strain      : true
-    Basic_diffusion_flame  : false
+    Extinction_strain      : false
+    Basic_diffusion_flame  : true
     Major_species:
       - 'O2'
       - 'H2O'
@@ -327,9 +327,9 @@ conditions:
 
     Phi:
       mode   : linspace
-      start  : 0.8
-      end    : 1.5
-      points : 25
+      start  : 0.25
+      end    : 2.2
+      points : 15
 
   #------------------------
 
@@ -346,9 +346,9 @@ conditions:
 
     Phi:
       mode   : linspace
-      start  : 0.8
-      end    : 1.5
-      points : 10
+      start  : 0.25
+      end    : 2.2
+      points : 15
 
   #------------------------
 
@@ -363,9 +363,9 @@ conditions:
 
     Phi:
       mode   : linspace
-      start  : 0.8
-      end    : 1.5
-      points : 35
+      start  : 0.25
+      end    : 2.2
+      points : 40
 
   #------------------------
 
@@ -380,9 +380,9 @@ conditions:
 
     Phi:
       mode   : linspace
-      start  : 0.8
-      end    : 1.5
-      points : 10
+      start  : 0.25
+      end    : 2.2
+      points : 40
 
   #------------------------
 
@@ -395,7 +395,7 @@ conditions:
       - [300, 300]
 
     Velocity_flux_pairs:
-      - [6.0, 3.0]
+      - [0.085,0.085]
 
 
 # ----------------------------------------------------------

@@ -58,6 +58,9 @@ from itertools import chain
 #  Import library
 # ===================================================================================================================
 """
+from colorama import Fore
+from colorama import init
+init(autoreset=True)
 import cantera as ct
 import numpy as np
 import math 
@@ -110,7 +113,7 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
             Thickness_list = []
             Time_list      = []
             Da_list        = []
-
+            MECH           = [] 
     
             for mech_name in mechanisms:
                 mech_index = list(mechanisms.keys()).index(mech_name)
@@ -122,6 +125,12 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                     f"{indexP:02}-Initial_Pressure_{P:.2f}bars",
                     f"results_{mech_name}_Species_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_T{T:.2f}_P{P:.2f}.csv"
                 )
+
+                if not os.path.exists(csv_path):
+                        print(Fore.RED + f" WARNING: CSV not found, skipping: {csv_path}")
+                        continue  
+                MECH.append(mech_name)
+                
                 
                 with open(csv_path, mode='r') as csv_file:
                     reader = csv.DictReader(csv_file)
@@ -208,7 +217,7 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                 dTdx_list          = []
                 species_Y = {}
                 species_X = {}
-                
+                MECH = []
                 for mech_name in mechanisms:
                     mech_index = list(mechanisms.keys()).index(mech_name)
                     species_Y_mech = {}
@@ -222,6 +231,11 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                         f"{indexPhi:02}-Equivalence_ratio_Phi-{eq_ratio:.2f}",
                         f"species_results_{mech_name}_Species_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_T{T:.2f}_P{P:.2f}_Phi{eq_ratio:.2f}.csv")
                     
+                    if not os.path.exists(csv_path):
+                        print(Fore.RED + f" WARNING: CSV not found, skipping: {csv_path}")
+                        continue  
+                    MECH.append(mech_name)
+
                     with open(csv_path, mode='r') as csv_file:
                         reader = csv.DictReader(csv_file, delimiter=';')
             
@@ -276,7 +290,9 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                                 species_X[key] = []
                             species_X[key].append(species_X_mech[key])
 
-
+                if len(Grid_list) == 0:
+                    continue
+                
                 for i in range(len(Grid_list)):
                     Grid_max = Grid_list[i][-1] 
                     Grid_list[i] = [g / Grid_max for g in Grid_list[i]]  
@@ -381,8 +397,8 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                             if k in Major_species:
                                 plot_evolution(
                                     Grid_inter , SPECIES_inter, MECH_inter, COLOR,STYLE,
-                                    ylabel=f"Y_[{key}]",
-                                    xlabel="Distance [mm]",
+                                    ylabel=f"{key}",
+                                    xlabel="x [mm]",
                                     x_limit_left= x_left, 
                                     x_limit_right= x_right,
                                     save_fig=Save_plot,
@@ -393,10 +409,11 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                             elif k in Radicals:
                                 plot_evolution(
                                     Grid_inter , SPECIES_inter, MECH_inter, COLOR,STYLE,
-                                    ylabel=f"Y_{key}]",
-                                    xlabel="Distance [mm]",
+                                    ylabel=f"{key}",
+                                    xlabel="x [mm]",
                                     x_limit_left= x_left, 
                                     x_limit_right= x_right,
+                                    
                                     type_y_scale='log',
                                     save_fig=Save_plot,
                                     save_path=P_eq_path_spe,
@@ -428,8 +445,8 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                             if k in Major_species:
                                 plot_evolution(
                                     Grid_inter , SPECIES_inter, MECH_inter, COLOR,STYLE,
-                                    ylabel=f"X_[{key}]",
-                                    xlabel="Distance [mm]",
+                                    ylabel=f"{key}",
+                                    xlabel="x [mm]",
                                     x_limit_left= x_left, 
                                     x_limit_right= x_right,
                                     save_fig=Save_plot,
@@ -441,8 +458,8 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                                 X_ppm = [[val * 1e6 for val in sublist] for sublist in SPECIES_inter]
                                 plot_evolution(
                                     Grid_inter , X_ppm, MECH_inter, COLOR,STYLE,
-                                    ylabel=f"X_[{key} ppm]",
-                                    xlabel="Distance [mm]",
+                                    ylabel=f"{key} [ppm]",
+                                    xlabel="x [mm]",
                                     x_limit_left= x_left, 
                                     x_limit_right= x_right,
                                     save_fig=Save_plot,
@@ -454,6 +471,9 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                     mech_index = 0            
                     for mech_name, mech_file in mechanisms.items():
                         print("\t \t \t -> PROCESSING: COUPLED SPECIES PLOT EVOLUTION")  
+
+                        if mech_name not in MECH:
+                            continue
                         
                         gas = ct.Solution(mech_file)
                         species_mech = gas.species_names
@@ -509,7 +529,7 @@ def PostProcess_Flame1D(mechanisms, MECH, Fuel_name, Oxi_name, configuration, fi
                                 labels,
                                 COLOR,STYLE,
                                 ylabel=ylabel,
-                                xlabel="Distance [mm]",
+                                xlabel="x [mm]",
                                 x_limit_left=x_left,
                                 x_limit_right=x_right,
                                 save_fig=Save_plot,
@@ -548,13 +568,19 @@ def PostProcess_Temperature_Adiabatic(mechanisms, MECH, Fuel_name, Oxi_name, con
             TemMax                     = []
             orientationPhi             = []
             orientationT               = []
-            
+            MECH                       = []
+
             for mech_name in mechanisms:
                 mech_index=list(mechanisms.keys()).index(mech_name)
                 csv_file_path=os.path.join(file_path_csv,f"{mech_index:02}-Kinetic_Mechanism Used-{mech_name}",
                                                                f"{indexT:02}-Initial_Temperature_{T:.2f}K",
                                                                f"{Pressure.index(P):02}-Initial_Pressure_{P:.2f}bars",
                                                                f"results_{mech_name}_Species_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_T{T:.2f}K_P{P:.2f}.csv")
+                if not os.path.exists(csv_file_path):
+                        print(Fore.RED + f" WARNING: CSV not found, skipping: {csv_file_path}")
+                        continue  
+                MECH.append(mech_name)
+                
                 with open(csv_file_path, mode='r') as csv_file:
                     reader = csv.DictReader(csv_file, delimiter=';')
                     Temp, Rho, H_init, H_final = [], [], [], []
@@ -668,7 +694,7 @@ def PostProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, configuration, file_p
             print(f"\t  -> PROCESSING: Pressure {P:.2f} bar / Equivalence Ratio phi:{eq_ratio:.2f}")
             IDT_list         = []
             Temperature_list = []
-            
+            MECH             = []
     
             # Pour chaque mécanisme, relire le CSV correspondant
             for mech_name in mechanisms:
@@ -682,6 +708,11 @@ def PostProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, configuration, file_p
                     f"{indexP:02}-Initial_Pressure_{P:.2f}bars",
                     f"results_{mech_name}_Species_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_Phi{eq_ratio:.0f}_P{P:.2f}.csv")
                 
+                if not os.path.exists(csv_path):
+                        print(Fore.RED + f" WARNING: CSV not found, skipping: {csv_path}")
+                        continue  
+                MECH.append(mech_name)
+
                 with open(csv_path, mode='r') as csv_file:
                     reader = csv.DictReader(csv_file, delimiter=';')
                     T, IDT = [], []
@@ -725,7 +756,7 @@ def PostProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, configuration, file_p
                 OH_radical_list    = []
                 HRR_list           = []
                 Pressure_list      = []
-                
+                MECH               = []
                 for mech_name in mechanisms:
                     csv_path = os.path.join(
                         file_path_csv, 
@@ -736,7 +767,11 @@ def PostProcess_IDT(mechanisms, MECH, Fuel_name, Oxi_name, configuration, file_p
                         f"results_time_{mech_name}_Species_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_Phi{eq_ratio:.0f}_P{P:.2f}.csv"
                     )
                     
-                    
+                    if not os.path.exists(csv_path):
+                        print(Fore.RED + f" WARNING: CSV not found, skipping: {csv_path}")
+                        continue  
+                    MECH.append(mech_name)
+
                     with open(csv_path, mode='r') as csv_file:
                         reader = csv.DictReader(csv_file, delimiter=';')
                         Time , Temp, OH, HRR, Pres= [], [], [], [], []
@@ -917,6 +952,7 @@ def PostProcess_Counter_flow(mechanisms, MECH, Fuel_name, Oxi_name, configuratio
             Cp_list            = []
             Lambda_list        = []
             Mu_list            = []
+            MECH               = []
             species_Y = {}
             species_X = {}
             
@@ -933,6 +969,12 @@ def PostProcess_Counter_flow(mechanisms, MECH, Fuel_name, Oxi_name, configuratio
                     f"{indexP:02}-Initial_Pressure_{P:.2f}bars",
                     f"{indexMass:02}-Couple_Mass_flow_{Velo}",
                     f"results_{mech_name}_Species_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_Tfuel{T[0]:.0f}_Toxi{T[1]:.0f}_P{P:.2f}.csv")
+                
+                if not os.path.exists(csv_path):
+                        print(Fore.RED + f" WARNING: CSV not found, skipping: {csv_path}")
+                        continue  
+                MECH.append(mech_name)
+                
                 
                 with open(csv_path, mode='r') as csv_file:
                     reader = csv.DictReader(csv_file, delimiter=';')
@@ -1311,7 +1353,8 @@ def PostProcess_Counter_flow_quenching(mechanisms, MECH, Fuel_name, Oxi_name, co
             quenching_valHRR = []
             orientationV     = []
             orientationH     = []
-         
+            MECH             = []
+
             for mech_name in mechanisms:
                 mech_index = list(mechanisms.keys()).index(mech_name)
                 
@@ -1321,6 +1364,11 @@ def PostProcess_Counter_flow_quenching(mechanisms, MECH, Fuel_name, Oxi_name, co
                     f"{indexT:02}-Initial_Couple_Temperature_{T}K",
                     f"{indexP:02}-Initial_Pressure_{P:.2f}bars",
                     f"results_{mech_name}_Species_Fuel{Fuel_name}_Oxidizer{Oxi_name}_at_Tfuel{T[0]:.0f}_Toxi{T[1]:.0f}_P{P:.2f}.csv")
+                
+                if not os.path.exists(csv_path):
+                        print(Fore.RED + f" WARNING: CSV not found, skipping: {csv_path}")
+                        continue  
+                MECH.append(mech_name)
                 
                 with open(csv_path, mode='r') as csv_file:
                     reader = csv.DictReader(csv_file, delimiter=';')

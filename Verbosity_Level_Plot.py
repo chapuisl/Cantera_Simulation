@@ -417,11 +417,44 @@ def Verbosity_Counter_flow(level_verbosity, gas, flame):
         print("\t \t  Flame Profiles:")
         Temp = flame.T
         x = flame.grid
+        HRR = flame.heat_release_rate
         dTdx = np.gradient(Temp, x)
         strain = np.gradient(flame.velocity, x)
-        print(f"\t \t   - Max Temperature       : {Temp.max():.6f} K")
-        print(f"\t \t   - Max dT/dx             : {np.max(dTdx):.6e} K/m")
-        print(f"\t \t   - Max Strain Rate       : {np.max(strain):.6e} 1/s")
+
+        i_max = np.argmax(Temp)
+        grad_fuel = np.max(dTdx[:i_max])
+
+        # Gradient max côté air (droite du pic) — le gradient est négatif
+        grad_air = np.min(dTdx[i_max:])
+
+        # Épaisseurs thermiques
+        T_fuel = Temp[0]   # température côté fuel
+        T_air  = Temp[-1]  # température côté air
+
+        delta_fuel = (Temp[i_max] - T_fuel) / grad_fuel *1e3
+        delta_air  = (Temp[i_max] - T_air)  / abs(grad_air)*1e3
+        delta_total = delta_fuel + delta_air
+
+        i_min_HRR = 0 
+        i_max_HRR = 0
+        bool_min_find = False
+        for hrr in (HRR):
+            if hrr > 1e6 and bool_min_find is False:
+               i_min_HRR = np.argwhere(HRR == hrr)[0][0]
+               bool_min_find = True
+            
+            if hrr <= 1e6 and bool_min_find is True:
+                i_max_HRR = np.argwhere(HRR == hrr)[0][0]
+                break
+        delta_total_HRR = (x[i_max_HRR] - x[i_min_HRR]) *1e3
+               
+        print(f"\t \t   - Fuel Thermal thickness     : {delta_fuel:.2f} mm")
+        print(f"\t \t   - Oxid Thermal thickness     : {delta_air:.2f} mm")
+        print(f"\t \t   - Tot Thermal thickness      : {delta_total:.2f} mm")
+        print(f"\t \t   - Tot HRR thickness          : {delta_total_HRR:.2f} mm")
+
+        print(f"\t \t   - Max Temperature        : {Temp.max():.6f} K")
+        print(f"\t \t   - Max Strain Rate        : {np.max(strain):.6e} 1/s")
         print("\t \t --------------------------------------------------")
 
 def Verbosity_Counter_flow_quenching(level_verbosity, flame, n, strain_factor,Coef_Scaling_flame,alpha, Fuel_inlet_mdot,oxidizer_inlet_mdot):
